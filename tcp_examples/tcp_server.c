@@ -36,15 +36,17 @@
 
 #define BUFFER_SIZE (1<<16)
 
+//bsduser222 4222365
+
 int
 main(void) {
     int fd;
     struct sockaddr_in server_addr, client_addr;
-    socklen_t addr_len;
+    socklen_t client_addr_len;
     ssize_t len;
     char buf[BUFFER_SIZE];
 
-    fd = Socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     memset((void*) &server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
@@ -66,23 +68,33 @@ main(void) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
     while (1) {
-        client_fd = Accept(fd, (struct sockaddr *)&client_addr,(socklen_t*)&addr_len);
-
-        addr_len = (socklen_t) sizeof(client_addr);
+        printf("client accept\n");
         memset((void*) &client_addr, 0, sizeof(client_addr));
-        len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
+        client_addr_len = (socklen_t) sizeof(client_addr);
+        client_fd = Accept(fd, (struct sockaddr*) &client_addr, &client_addr_len);
+        printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
 
         memset((void*) timeBuffer, 0, sizeof(timeBuffer));
 
         time(&raw_time);
         time_info = localtime(&raw_time);
 
-        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d", time_info->tm_mday, time_info->tm_mon + 1, time_info->tm_year + 1900,
+        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d", time_info->tm_mday, time_info->tm_mon + 1,
+                time_info->tm_year + 1900,
                 time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
 
-        printf("Send %zd bytes to %s. %s\n", len, inet_ntoa(client_addr.sin_addr), timeBuffer);
+        printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
 
-        Send(client_fd, (const void*) timeBuffer, (size_t) len, 0);
+        Send(client_fd, (const void*) timeBuffer, sizeof(timeBuffer), 0);
+
+        do {
+            len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
+            printf("recv:%ld\n", len);
+        } while (len > 0);
+
+        if (len < 0) {
+            break;
+        }
     }
 #pragma clang diagnostic pop
     Close(fd);

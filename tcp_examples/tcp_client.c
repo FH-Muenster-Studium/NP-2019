@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include "Socket.h"
 
-#define BUFFER_SIZE  (1<<16)
+#define BUFFER_SIZE (1<<16)
 #define MESSAGE_SIZE (9216)
 
 int
@@ -70,19 +70,24 @@ main(int argc, char** argv) {
 
     int len;
 
+    int input = 1;
+
     while (running) {
         // Add stdin to fd_set
-        FD_SET(0, &read_fd_set);
+        FD_SET(STDIN_FILENO, &read_fd_set);
         // Add tcp socket to fd_set
         FD_SET(fd, &read_fd_set);
 
         Select(fd + 1, &read_fd_set, NULL, NULL, NULL);
 
         // Data from stdin
-        if (FD_ISSET(0, &read_fd_set)) {
-            len = Read(0, (void*) buf, sizeof(buf));
-            if (len == 0) {
-                running = 0;
+        if (FD_ISSET(STDIN_FILENO, &read_fd_set)) {
+            memset((void*) buf, 0, sizeof(buf));
+            len = Read(STDIN_FILENO, (void*) buf, sizeof(buf));
+            Send(fd, (const void*) buf, sizeof(buf), 0);
+            if (/*len == 0*/strlen(buf) == 0) {
+                //running = 0;
+                input = 0;
             } else {
                 Send(fd, (const void*) buf, (size_t) len, 0);
             }
@@ -92,9 +97,12 @@ main(int argc, char** argv) {
         if (FD_ISSET(fd, &read_fd_set)) {
             len = Recv(fd, (void*) buf, sizeof(buf), 0);
             if (len == 0) {
-                running = 0;
+                //running = 0;
             } else {
                 printf("%.*s\n", (int) len, buf);
+            }
+            if (input == 0) {
+                running = 0;
             }
         }
     }
