@@ -96,10 +96,6 @@ main(void) {
         printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
 
         Send(client_fd, (const void*) timeBuffer, sizeof(timeBuffer), 0);
-
-        while(1) {
-            sleep(10);
-        }
     }
 #pragma clang diagnostic pop
     Close(fd);
