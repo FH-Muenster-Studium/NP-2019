@@ -35,7 +35,7 @@
 
 #define BUFFER_SIZE (1<<16)
 #define MESSAGE_SIZE (9216)
-#define PORT 34535 //7
+#define PORT 1024 //7
 
 int
 main(int argc, char** argv) {

@@ -35,7 +35,7 @@
 #include <time.h>
 
 #define BUFFER_SIZE (1<<16)
-#define PORT 34535 //7
+#define PORT 1024 //7
 
 //bsduser222 4222365
 
