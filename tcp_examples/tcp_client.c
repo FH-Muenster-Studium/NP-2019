@@ -98,6 +98,7 @@ main(int argc, char** argv) {
                 while((len = Recv(fd, (void*) buf, sizeof(buf), 0)) > 0) {
                     printf("%.*s\n", (int) len, buf);
                 }
+                break;
             } else {
                 Send(fd, (const void*) buf, (size_t) strlen(buf), 0);
                 printf("send %s\n", buf);
