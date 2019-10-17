@@ -52,7 +52,7 @@ main(void)
 	server_addr.sin_len = sizeof(struct sockaddr_in);
 #endif
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	server_addr.sin_port = htons(7);
+	server_addr.sin_port = htons(2561);
 	if (bind(fd, (const struct sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
 		perror("bind");
 	}

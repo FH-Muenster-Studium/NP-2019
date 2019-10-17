@@ -51,7 +51,7 @@ main(int argc, char** argv) {
 #ifdef HAVE_SIN_LEN
     server_addr.sin_len = sizeof(struct sockaddr_in);
 #endif
-    server_addr.sin_port = htons(7);
+    server_addr.sin_port = htons(2561);
     if ((server_addr.sin_addr.s_addr = (in_addr_t) inet_addr(argv[1])) == INADDR_NONE) {
         fprintf(stderr, "Invalid address\n");
     }
