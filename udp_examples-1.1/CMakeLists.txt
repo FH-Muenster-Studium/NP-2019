@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8.9)
+project (echo_server)
+add_executable(tcp_server echo_server.c Socket.c Socket.h)
+project (echo_client)
+add_executable(tcp_client echo_client.c Socket.c Socket.h)
