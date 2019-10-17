@@ -59,12 +59,18 @@ main(void) {
     time_t raw_time;
     struct tm* time_info;
 
+    Listen(fd, 1);
+
+    int client_fd;
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
     while (1) {
+        client_fd = Accept(fd, (struct sockaddr *)&client_addr,(socklen_t*)&addr_len);
+
         addr_len = (socklen_t) sizeof(client_addr);
         memset((void*) &client_addr, 0, sizeof(client_addr));
-        len = Recvfrom(fd, (void*) buf, sizeof(buf), 0, (struct sockaddr*) &client_addr, &addr_len);
+        len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
 
         memset((void*) timeBuffer, 0, sizeof(timeBuffer));
 
@@ -76,7 +82,7 @@ main(void) {
 
         printf("Send %zd bytes to %s. %s\n", len, inet_ntoa(client_addr.sin_addr), timeBuffer);
 
-        Sendto(fd, (const void*) timeBuffer, (size_t) len, 0, (struct sockaddr*) &client_addr, addr_len);
+        Send(client_fd, (const void*) timeBuffer, (size_t) len, 0);
     }
 #pragma clang diagnostic pop
     Close(fd);

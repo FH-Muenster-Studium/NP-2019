@@ -43,12 +43,10 @@ main(int argc, char** argv) {
         return 0;
     }
     int fd;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t addr_len;
-    ssize_t len;
-    char buf[BUFFER_SIZE];
 
-    fd = Socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    struct sockaddr_in server_addr;
+
+    fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
@@ -60,15 +58,48 @@ main(int argc, char** argv) {
         fprintf(stderr, "Invalid address\n");
     }
 
-    memset((void*) buf, 'A', sizeof(buf));
-    Sendto(fd, (const void*) buf, (size_t) MESSAGE_SIZE, 0, (const struct sockaddr*) &server_addr,
-           sizeof(server_addr));
+    Connect(fd, (struct sockaddr*) &server_addr, sizeof(server_addr));
 
-    addr_len = (socklen_t) sizeof(client_addr);
-    memset((void*) buf, 0, sizeof(buf));
-    len = Recvfrom(fd, (void*) buf, sizeof(buf), 0, (struct sockaddr*) &client_addr, &addr_len);
-    printf("Received %zd bytes from %s. %s\n", len, inet_ntoa(client_addr.sin_addr), buf);
-    Close(fd);
+    fd_set read_fd_set;
 
-    return (0);
+    FD_ZERO(&read_fd_set);
+
+    int running = 1;
+
+    char buf[BUFFER_SIZE];
+
+    int len;
+
+    while (running) {
+        // Add stdin to fd_set
+        FD_SET(0, &read_fd_set);
+        // Add tcp socket to fd_set
+        FD_SET(fd, &read_fd_set);
+
+        Select(fd + 1, &read_fd_set, NULL, NULL, NULL);
+
+        // Data from stdin
+        if (FD_ISSET(0, &read_fd_set)) {
+            len = Read(0, (void*) buf, sizeof(buf));
+            if (len == 0) {
+                running = 0;
+            } else {
+                Send(fd, (const void*) buf, (size_t) len, 0);
+            }
+        }
+
+        // Data from server
+        if (FD_ISSET(fd, &read_fd_set)) {
+            len = Recv(fd, (void*) buf, sizeof(buf), 0);
+            if (len == 0) {
+                running = 0;
+            } else {
+                printf("%.*s\n", (int) len, buf);
+            }
+        }
+    }
+
+    close(fd);
+
+    return 0;
 }
