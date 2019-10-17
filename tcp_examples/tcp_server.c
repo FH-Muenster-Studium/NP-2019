@@ -35,6 +35,7 @@
 #include <time.h>
 
 #define BUFFER_SIZE (1<<16)
+#define PORT 7788 //7
 
 //bsduser222 4222365
 
@@ -54,7 +55,7 @@ main(void) {
     server_addr.sin_len = sizeof(struct sockaddr_in);
 #endif
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(7);
+    server_addr.sin_port = htons(PORT);
     Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
 
     char timeBuffer[BUFFER_SIZE];
@@ -74,6 +75,15 @@ main(void) {
         client_fd = Accept(fd, (struct sockaddr*) &client_addr, &client_addr_len);
         printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
 
+        do {
+            len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
+            printf("recv:%ld\n", len);
+        } while (len > 0);
+
+        if (len < 0) {
+            break;
+        }
+
         memset((void*) timeBuffer, 0, sizeof(timeBuffer));
 
         time(&raw_time);
@@ -86,15 +96,6 @@ main(void) {
         printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
 
         Send(client_fd, (const void*) timeBuffer, sizeof(timeBuffer), 0);
-
-        do {
-            len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
-            printf("recv:%ld\n", len);
-        } while (len > 0);
-
-        if (len < 0) {
-            break;
-        }
     }
 #pragma clang diagnostic pop
     Close(fd);

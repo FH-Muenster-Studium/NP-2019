@@ -35,6 +35,7 @@
 
 #define BUFFER_SIZE (1<<16)
 #define MESSAGE_SIZE (9216)
+#define PORT 7788 //7
 
 int
 main(int argc, char** argv) {
@@ -53,7 +54,7 @@ main(int argc, char** argv) {
 #ifdef HAVE_SIN_LEN
     server_addr.sin_len = sizeof(struct sockaddr_in);
 #endif
-    server_addr.sin_port = htons(7);
+    server_addr.sin_port = htons(PORT);
     if ((server_addr.sin_addr.s_addr = (in_addr_t) inet_addr(argv[1])) == INADDR_NONE) {
         fprintf(stderr, "Invalid address\n");
     }
@@ -88,6 +89,7 @@ main(int argc, char** argv) {
             if (/*len == 0*/strlen(buf) == 0) {
                 //running = 0;
                 input = 0;
+                Shutdown(fd, SHUT_WR);
             } else {
                 Send(fd, (const void*) buf, (size_t) len, 0);
             }
@@ -96,14 +98,15 @@ main(int argc, char** argv) {
         // Data from server
         if (FD_ISSET(fd, &read_fd_set)) {
             len = Recv(fd, (void*) buf, sizeof(buf), 0);
+            printf("recv %d\n", len);
             if (len == 0) {
                 //running = 0;
             } else {
                 printf("%.*s\n", (int) len, buf);
             }
-            if (input == 0) {
+            /*if (input == 0) {
                 running = 0;
-            }
+            }*/
         }
     }
 
@@ -111,3 +114,5 @@ main(int argc, char** argv) {
 
     return 0;
 }
+
+//bsduser498 8518457

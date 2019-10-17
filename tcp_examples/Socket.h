@@ -40,4 +40,6 @@ int Accept(int fd, struct sockaddr* client_socket_address, socklen_t* client_soc
 
 void Close(int fd);
 
+void Shutdown(int fd, int how);
+
 #endif //DAYTIME_CLIENT_SOCKET_H

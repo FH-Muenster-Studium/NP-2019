@@ -87,3 +87,9 @@ int Accept(int fd, struct sockaddr* client_socket_address, socklen_t* client_soc
     }
     return client_fd;
 }
+
+void Shutdown(int fd, int how) {
+    if(shutdown(fd, how) < 0) {
+        perror("shutdown");
+    }
+}
