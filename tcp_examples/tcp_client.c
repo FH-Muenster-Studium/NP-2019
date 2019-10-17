@@ -71,7 +71,7 @@ main(int argc, char** argv) {
 
     int len;
 
-    int input = 1;
+    //int input = 1;
 
     while (running) {
         // Add stdin to fd_set
@@ -88,7 +88,7 @@ main(int argc, char** argv) {
             Send(fd, (const void*) buf, sizeof(buf), 0);
             if (/*len == 0*/strlen(buf) == 0) {
                 //running = 0;
-                input = 0;
+                //input = 0;
                 Shutdown(fd, SHUT_WR);
             } else {
                 Send(fd, (const void*) buf, (size_t) len, 0);
@@ -100,7 +100,7 @@ main(int argc, char** argv) {
             len = Recv(fd, (void*) buf, sizeof(buf), 0);
             printf("recv %d\n", len);
             if (len == 0) {
-                //running = 0;
+                running = 0;
             } else {
                 printf("%.*s\n", (int) len, buf);
             }
