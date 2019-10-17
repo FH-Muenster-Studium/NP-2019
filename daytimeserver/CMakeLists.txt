@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8.9)
+project (daytime_server)
+add_executable(daytime_server daytime_server.c Socket.c Socket.h)
+project (daytime_client)
+add_executable(daytime_client daytime_client.c Socket.c Socket.h)
