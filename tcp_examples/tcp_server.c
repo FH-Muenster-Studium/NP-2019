@@ -35,7 +35,7 @@
 #include <time.h>
 
 #define BUFFER_SIZE (1<<16)
-#define PORT 27015 //7
+#define PORT 2450 //7
 
 //bsduser222 4222365
 
@@ -76,8 +76,16 @@ main(void) {
         printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
 
         do {
+            memset((void*) buf, 0, sizeof(buf));
             len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
-            printf("recv:%ld %s\n", len, buf);
+            /*if (strlen(buf) == 0) {
+                printf("end\n");
+                break;
+            } else {*/
+            if (strlen(buf) != 0) {
+                printf("recv:%ld %s\n", len, buf);
+            }
+            //}
         } while (len > 0);
 
         if (len < 0) {
@@ -96,6 +104,8 @@ main(void) {
         printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
 
         Send(client_fd, (const void*) timeBuffer, sizeof(timeBuffer), 0);
+
+        Close(client_fd);
     }
 #pragma clang diagnostic pop
     Close(fd);

@@ -30,12 +30,12 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include "Socket.h"
 
 #define BUFFER_SIZE (1<<16)
 #define MESSAGE_SIZE (9216)
-#define PORT 27015 //7
 
 int
 main(int argc, char** argv) {
@@ -43,6 +43,13 @@ main(int argc, char** argv) {
         fprintf(stderr, "Provide server address\n");
         return 0;
     }
+    if (argc < 3) {
+        fprintf(stderr, "Provide server address and port\n");
+        return 0;
+    }
+
+    int port = atoi(argv[2]);
+
     int fd;
 
     struct sockaddr_in server_addr;
@@ -54,7 +61,7 @@ main(int argc, char** argv) {
 #ifdef HAVE_SIN_LEN
     server_addr.sin_len = sizeof(struct sockaddr_in);
 #endif
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_port = htons(port);
     if ((server_addr.sin_addr.s_addr = (in_addr_t) inet_addr(argv[1])) == INADDR_NONE) {
         fprintf(stderr, "Invalid address\n");
     }
@@ -91,7 +98,8 @@ main(int argc, char** argv) {
                 //input = 0;
                 Shutdown(fd, SHUT_WR);
             } else {
-                Send(fd, (const void*) buf, (size_t) len, 0);
+                Send(fd, (const void*) buf, (size_t) strlen(buf), 0);
+                printf("send %s\n", buf);
             }
         }
 
