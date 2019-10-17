@@ -77,7 +77,7 @@ main(void) {
 
         do {
             len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
-            printf("recv:%ld\n", len);
+            printf("recv:%ld %s\n", len, buf);
         } while (len > 0);
 
         if (len < 0) {
