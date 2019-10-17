@@ -35,7 +35,7 @@
 #include <time.h>
 
 #define BUFFER_SIZE (1<<16)
-#define PORT 1024 //7
+#define PORT 27015 //7
 
 //bsduser222 4222365
 
@@ -96,6 +96,10 @@ main(void) {
         printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
 
         Send(client_fd, (const void*) timeBuffer, sizeof(timeBuffer), 0);
+
+        while(1) {
+            sleep(10);
+        }
     }
 #pragma clang diagnostic pop
     Close(fd);
