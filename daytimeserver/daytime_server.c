@@ -87,7 +87,6 @@ main(void) {
         Send(client_fd, (const void*) timeBuffer, sizeof(timeBuffer), 0);
 
         do {
-            memset((void*) buf, 0, sizeof(buf));
             len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
         } while (len > 0);
 
