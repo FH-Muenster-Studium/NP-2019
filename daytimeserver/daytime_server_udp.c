@@ -35,19 +35,16 @@
 #include <time.h>
 
 #define BUFFER_SIZE (1<<16)
-#define PORT 2451 //7
-
-//bsduser222 4222365
 
 int
 main(void) {
     int fd;
     struct sockaddr_in server_addr, client_addr;
-    socklen_t client_addr_len;
+    socklen_t addr_len;
     ssize_t len;
     char buf[BUFFER_SIZE];
 
-    fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    fd = Socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     memset((void*) &server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
@@ -55,43 +52,31 @@ main(void) {
     server_addr.sin_len = sizeof(struct sockaddr_in);
 #endif
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_port = htons(7);
     Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
 
     char timeBuffer[BUFFER_SIZE];
     time_t raw_time;
     struct tm* time_info;
 
-    Listen(fd, 1);
-
-    int client_fd;
-
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
     while (1) {
+        addr_len = (socklen_t) sizeof(client_addr);
         memset((void*) &client_addr, 0, sizeof(client_addr));
-        client_addr_len = (socklen_t) sizeof(client_addr);
-        client_fd = Accept(fd, (struct sockaddr*) &client_addr, &client_addr_len);
+        len = Recvfrom(fd, (void*) buf, sizeof(buf), 0, (struct sockaddr*) &client_addr, &addr_len);
 
         memset((void*) timeBuffer, 0, sizeof(timeBuffer));
 
         time(&raw_time);
         time_info = localtime(&raw_time);
 
-        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d", time_info->tm_mday, time_info->tm_mon + 1,
-                time_info->tm_year + 1900,
+        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d", time_info->tm_mday, time_info->tm_mon + 1, time_info->tm_year + 1900,
                 time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
 
-        printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
+        printf("Send %zd bytes to %s. %s\n", len, inet_ntoa(client_addr.sin_addr), timeBuffer);
 
-        Send(client_fd, (const void*) timeBuffer, sizeof(timeBuffer), 0);
-
-        do {
-            memset((void*) buf, 0, sizeof(buf));
-            len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
-        } while (len > 0);
-
-        Close(client_fd);
+        Sendto(fd, (const void*) timeBuffer, (size_t) len, 0, (struct sockaddr*) &client_addr, addr_len);
     }
 #pragma clang diagnostic pop
     Close(fd);

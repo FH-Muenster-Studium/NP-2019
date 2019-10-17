@@ -92,8 +92,6 @@ main(int argc, char** argv) {
             len = Read(STDIN_FILENO, (void*) buf, sizeof(buf));
             Send(fd, (const void*) buf, sizeof(buf), 0);
             if (/*len == 0*/strlen(buf) == 0) {
-                //running = 0;
-                //input = 0;
                 Shutdown(fd, SHUT_WR);
                 while((len = Recv(fd, (void*) buf, sizeof(buf), 0)) > 0) {
                     printf("%.*s\n", (int) len, buf);
@@ -101,14 +99,12 @@ main(int argc, char** argv) {
                 break;
             } else {
                 Send(fd, (const void*) buf, (size_t) strlen(buf), 0);
-                printf("send %s\n", buf);
             }
         }
 
         // Data from server
         if (FD_ISSET(fd, &read_fd_set)) {
             len = Recv(fd, (void*) buf, sizeof(buf), 0);
-            printf("recv %d\n", len);
             if (len == 0) {
                 running = 0;
             } else {
