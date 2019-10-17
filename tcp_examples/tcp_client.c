@@ -78,8 +78,6 @@ main(int argc, char** argv) {
 
     int len;
 
-    //int input = 1;
-
     while (running) {
         // Add stdin to fd_set
         FD_SET(STDIN_FILENO, &read_fd_set);
@@ -97,6 +95,9 @@ main(int argc, char** argv) {
                 //running = 0;
                 //input = 0;
                 Shutdown(fd, SHUT_WR);
+                while((len = Recv(fd, (void*) buf, sizeof(buf), 0)) > 0) {
+                    printf("%.*s\n", (int) len, buf);
+                }
             } else {
                 Send(fd, (const void*) buf, (size_t) strlen(buf), 0);
                 printf("send %s\n", buf);
@@ -112,9 +113,6 @@ main(int argc, char** argv) {
             } else {
                 printf("%.*s\n", (int) len, buf);
             }
-            /*if (input == 0) {
-                running = 0;
-            }*/
         }
     }
 
