@@ -93,7 +93,7 @@ main(int argc, char** argv) {
             Send(fd, (const void*) buf, sizeof(buf), 0);
             if (/*len == 0*/strlen(buf) == 0) {
                 Shutdown(fd, SHUT_WR);
-                while((len = Recv(fd, (void*) buf, sizeof(buf), 0)) > 0) {
+                while ((len = Recv(fd, (void*) buf, sizeof(buf), 0)) > 0) {
                     printf("%.*s\n", (int) len, buf);
                 }
                 break;
