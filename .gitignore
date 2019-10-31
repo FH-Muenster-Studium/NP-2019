@@ -19,3 +19,4 @@ udp_examples-base/Makefile.in
 udp_examples/Makefile
 udp_examples/Makefile.in
 udp_examples-1.1/.idea/workspace.xml
+tcp_examples/discard_server
