@@ -56,8 +56,11 @@ main(int argc, char** argv) {
         fprintf(stderr, "Invalid address\n");
     }
 
+    Connect(fd, (const struct sockaddr*)&server_addr, sizeof(server_addr));
+
     memset((void*) buf, 'A', sizeof(buf));
-    Sendto(fd, (const void*) buf, (size_t) MESSAGE_SIZE, 0, (const struct sockaddr*) &server_addr, sizeof(server_addr));
+    //Sendto(fd, (const void*) buf, (size_t) MESSAGE_SIZE, 0, (const struct sockaddr*) &server_addr, sizeof(server_addr));
+    Send(fd, (const void*) buf, (size_t) MESSAGE_SIZE, 0);
 
     addr_len = (socklen_t) sizeof(client_addr);
     memset((void*) buf, 0, sizeof(buf));
