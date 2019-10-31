@@ -64,9 +64,9 @@ main(void) {
 
     int client_fd;
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-    while (1) {
+    int running = 1;
+    
+    while (running) {
         printf("client accept\n");
         memset((void*) &client_addr, 0, sizeof(client_addr));
         client_addr_len = (socklen_t) sizeof(client_addr);
@@ -97,7 +97,6 @@ main(void) {
 
         Close(client_fd);
     }
-#pragma clang diagnostic pop
     Close(fd);
 
     return 0;
