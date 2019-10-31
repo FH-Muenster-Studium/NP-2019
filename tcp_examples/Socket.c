@@ -62,8 +62,9 @@ ssize_t Recv(int fd, void* buffer, size_t buffer_size, int flags) {
     return len;
 }
 
-void Send(int fd, const void* buffer, size_t buffer_size, int flags) {
-    if (send(fd, buffer, buffer_size, flags) < 0) {
+int Send(int fd, const void* buffer, size_t buffer_size, int flags) {
+    ssize_t len;
+    if ((len = send(fd, buffer, buffer_size, flags) < 0)) {
         perror("send");
     }
 }
