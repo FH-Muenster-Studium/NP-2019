@@ -65,7 +65,7 @@ main(void) {
     int client_fd;
 
     int running = 1;
-    
+
     while (running) {
         printf("client accept\n");
         memset((void*) &client_addr, 0, sizeof(client_addr));
@@ -73,14 +73,14 @@ main(void) {
         client_fd = Accept(fd, (struct sockaddr*) &client_addr, &client_addr_len);
         printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
 
-        do {
+        /*do {
             memset((void*) buf, 0, sizeof(buf));
             len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
             if (strlen(buf) != 0) {
                 printf("recv:%ld %s\n", len, buf);
                 Send(client_fd, (const void*) buf, len, 0);
             }
-        } while (len > 0);
+        } while (len > 0);*/
 
         memset((void*) timeBuffer, 0, sizeof(timeBuffer));
 
