@@ -122,7 +122,10 @@ main(void) {
             if (client_fd == INVALID_CLIENT) continue;
             if (FD_ISSET(client_fd, &read_fd_set)) {
                 len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
-                if (len > 0) continue;
+                if (len > 0) {
+                    printf("data len:%ld\n", len);
+                    continue;
+                }
                 Close(client_fd);
                 printf("client closed fd: %d\n", client_fd);
                 for (int j = 0; j < MAX_CLIENTS; j++) {
