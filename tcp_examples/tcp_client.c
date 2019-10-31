@@ -111,7 +111,7 @@ main(int argc, char** argv) {
             if (len == 0) {
                 running = 0;
             } else {
-                printf("send: %.*s\n", (int) len, buf);
+                printf("received: %.*s\n", (int) len, buf);
             }
         }
     }
