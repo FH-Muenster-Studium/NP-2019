@@ -31,7 +31,7 @@ ssize_t Read(int fd, void* buffer, size_t buffer_size);
 
 ssize_t Recv(int fd, void* buffer, size_t buffer_size, int flags);
 
-int Send(int fd, const void* buffer, size_t buffer_size, int flags);
+ssize_t Send(int fd, const void* buffer, size_t buffer_size, int flags);
 
 void Connect(int fd, struct sockaddr* server_socket_address, size_t server_socket_address_size);
 

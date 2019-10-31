@@ -120,7 +120,7 @@ void* recv_socket(void* args) {
 int send_all(int socket, char* buffer, size_t length) {
     char* ptr = buffer;
     while (length > 0) {
-        int i = Send(socket, ptr, length, 0);
+        ssize_t i = Send(socket, ptr, length, 0);
         if (i < 1) return 0;
         ptr += i;
         length -= i;

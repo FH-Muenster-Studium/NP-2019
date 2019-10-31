@@ -48,7 +48,7 @@ void Close(int fd) {
 
 ssize_t Read(int fd, void* buffer, size_t buffer_size) {
     ssize_t len;
-    if ((len = read(fd, buffer, buffer_size) < 0)) {
+    if ((len = read(fd, buffer, buffer_size)) < 0) {
         perror("read");
     }
     return len;
@@ -62,9 +62,9 @@ ssize_t Recv(int fd, void* buffer, size_t buffer_size, int flags) {
     return len;
 }
 
-int Send(int fd, const void* buffer, size_t buffer_size, int flags) {
+ssize_t Send(int fd, const void* buffer, size_t buffer_size, int flags) {
     ssize_t len;
-    if ((len = send(fd, buffer, buffer_size, flags) < 0)) {
+    if ((len = send(fd, buffer, buffer_size, flags)) < 0) {
         perror("send");
     }
     return len;
