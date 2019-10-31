@@ -87,7 +87,7 @@ main(void) {
         time(&raw_time);
         time_info = localtime(&raw_time);
 
-        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d", time_info->tm_mday, time_info->tm_mon + 1,
+        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d\n", time_info->tm_mday, time_info->tm_mon + 1,
                 time_info->tm_year + 1900,
                 time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
 
