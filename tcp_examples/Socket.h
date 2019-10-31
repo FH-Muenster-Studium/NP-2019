@@ -17,7 +17,7 @@
 
 int Socket(int address_family, int type, int protocol);
 
-void Bind(int fd, const struct sockaddr* socket_address, size_t socket_address_size);
+int Bind(int fd, const struct sockaddr* socket_address, size_t socket_address_size);
 
 ssize_t Recvfrom(int fd, void* buffer, size_t buffer_size, int flags, struct sockaddr* client_socket_address,
                  socklen_t* client_socket_address_size);

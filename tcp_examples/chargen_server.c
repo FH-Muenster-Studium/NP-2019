@@ -53,8 +53,6 @@ main(void) {
     int fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len;
-    //ssize_t len;
-    //char buf[BUFFER_SIZE];
 
     fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 

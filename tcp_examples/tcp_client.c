@@ -76,10 +76,14 @@ main(int argc, char** argv) {
 
     int len;
 
+    int shutdown = 0;
+
     while (running) {
         FD_ZERO(&read_fd_set);
         // Add stdin to fd_set
-        FD_SET(STDIN_FILENO, &read_fd_set);
+        if (!shutdown) {
+            FD_SET(STDIN_FILENO, &read_fd_set);
+        }
         // Add tcp socket to fd_set
         FD_SET(fd, &read_fd_set);
 
@@ -89,18 +93,11 @@ main(int argc, char** argv) {
         if (FD_ISSET(STDIN_FILENO, &read_fd_set)) {
             memset((void*) buf, 0, sizeof(buf));
             len = Read(STDIN_FILENO, (void*) buf, sizeof(buf));
-            size_t lenOfStdIn = strlen(buf);
-            if (lenOfStdIn > 0 && buf[lenOfStdIn - 1] == '\n') {
-                buf[lenOfStdIn - 1] = '\0';
-            }
-            if (/*len == 0*/strlen(buf) == 0) {
+            if (len == 0) {
                 Shutdown(fd, SHUT_WR);
-                while ((len = Recv(fd, (void*) buf, sizeof(buf), 0)) > 0) {
-                    printf("%.*s\n", (int) len, buf);
-                }
-                break;
+                shutdown = 1;
             } else {
-                Send(fd, (const void*) buf, lenOfStdIn, 0);
+                Send(fd, (const void*) buf, len, 0);
             }
         }
 
@@ -111,9 +108,7 @@ main(int argc, char** argv) {
             if (len == 0) {
                 running = 0;
             } else {
-                if (strlen(buf) > 0) {
-                    printf("received: %.*s\n", (int) len, buf);
-                }
+                write(STDOUT_FILENO, buf, len);
             }
         }
     }

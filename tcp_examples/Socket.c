@@ -12,10 +12,12 @@ int Socket(int address_family, int type, int protocol) {
     return fd;
 }
 
-void Bind(int fd, const struct sockaddr* socket_address, size_t socket_address_size) {
-    if (bind(fd, socket_address, socket_address_size) < 0) {
+int Bind(int fd, const struct sockaddr* socket_address, size_t socket_address_size) {
+    int res;
+    if ((res = bind(fd, socket_address, socket_address_size)) < 0) {
         perror("bind");
     }
+    return res;
 }
 
 ssize_t Recvfrom(int fd, void* buffer, size_t buffer_size, int flags, struct sockaddr* client_socket_address,

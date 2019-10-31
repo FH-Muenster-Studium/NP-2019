@@ -42,8 +42,8 @@ main(void) {
     int fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len;
+
     ssize_t len;
-    char buf[BUFFER_SIZE];
 
     fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -54,7 +54,7 @@ main(void) {
 #endif
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(PORT);
-    Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
+    if (Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) return -1;
 
     char timeBuffer[BUFFER_SIZE];
     time_t raw_time;
@@ -73,30 +73,28 @@ main(void) {
         client_fd = Accept(fd, (struct sockaddr*) &client_addr, &client_addr_len);
         printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
 
-        /*do {
-            memset((void*) buf, 0, sizeof(buf));
-            len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
-            if (strlen(buf) != 0) {
-                printf("recv:%ld %s\n", len, buf);
-                Send(client_fd, (const void*) buf, len, 0);
-            }
-        } while (len > 0);*/
-
         memset((void*) timeBuffer, 0, sizeof(timeBuffer));
 
         time(&raw_time);
         time_info = localtime(&raw_time);
 
-        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d", time_info->tm_mday, time_info->tm_mon + 1,
+        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d\n", time_info->tm_mday, time_info->tm_mon + 1,
                 time_info->tm_year + 1900,
                 time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
 
         printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
 
-        Send(client_fd, (const void*) timeBuffer, sizeof(timeBuffer), 0);
+        Send(client_fd, (const void*) timeBuffer, strlen(timeBuffer), 0);
+
+        Shutdown(client_fd, SHUT_WR);
+
+        do {
+            len = Recv(client_fd, (void*) timeBuffer, sizeof(timeBuffer), 0);
+        } while (len > 0);
 
         Close(client_fd);
     }
+
     Close(fd);
 
     return 0;
