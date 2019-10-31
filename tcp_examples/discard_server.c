@@ -121,7 +121,7 @@ main(void) {
         for (int i = 0; i < MAX_CLIENTS; i++) {
             client_fd = client_sockets[i];
             if (FD_ISSET(client_fd, &read_fd_set)) {
-                printf("client data: %d\n", client_fd);
+                //printf("client data: %d\n", client_fd);
                 len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
                 if (len <= 0) {
                     Close(client_fd);
@@ -132,7 +132,7 @@ main(void) {
                         }
                     }
                 } else {
-                    printf("client read: %d\n", client_fd);
+                    //printf("client read: %d\n", client_fd);
                 }
             }
         }

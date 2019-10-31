@@ -67,6 +67,7 @@ int Send(int fd, const void* buffer, size_t buffer_size, int flags) {
     if ((len = send(fd, buffer, buffer_size, flags) < 0)) {
         perror("send");
     }
+    return len;
 }
 
 void Connect(int fd, struct sockaddr* server_socket_address, size_t server_socket_address_size) {
@@ -90,7 +91,28 @@ int Accept(int fd, struct sockaddr* client_socket_address, socklen_t* client_soc
 }
 
 void Shutdown(int fd, int how) {
-    if(shutdown(fd, how) < 0) {
+    if (shutdown(fd, how) < 0) {
         perror("shutdown");
+    }
+}
+
+void Pthread_create(pthread_t* p_thread,
+                    const pthread_attr_t* attr,
+                    void* (* callback)(void*),
+                    void* user_data) {
+    if (pthread_create(p_thread, attr, callback, user_data) < 0) {
+        perror("pthread_create");
+    }
+}
+
+void Pthread_attr_init(pthread_attr_t* attr) {
+    if (pthread_attr_init(attr) < 0) {
+        perror("pthread_attr_init");
+    }
+}
+
+void Pthread_attr_setdetachstate(pthread_attr_t* attr, int state) {
+    if (pthread_attr_setdetachstate(attr, state) < 0) {
+        perror("pthread_attr_setdetachstate");
     }
 }

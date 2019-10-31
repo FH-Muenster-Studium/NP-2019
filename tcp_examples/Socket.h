@@ -13,6 +13,7 @@
 #include <stdio.h>
 // For close
 #include <unistd.h>
+#include <pthread.h>
 
 int Socket(int address_family, int type, int protocol);
 
@@ -41,5 +42,14 @@ int Accept(int fd, struct sockaddr* client_socket_address, socklen_t* client_soc
 void Close(int fd);
 
 void Shutdown(int fd, int how);
+
+void Pthread_create(pthread_t* p_thread,
+                    const pthread_attr_t* attr,
+                    void* (*callback)(void*),
+                    void* user_data);
+
+void Pthread_attr_init(pthread_attr_t* attr);
+
+void Pthread_attr_setdetachstate(pthread_attr_t* attr, int state);
 
 #endif //DAYTIME_CLIENT_SOCKET_H

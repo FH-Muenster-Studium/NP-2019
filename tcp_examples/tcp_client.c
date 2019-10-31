@@ -70,8 +70,6 @@ main(int argc, char** argv) {
 
     fd_set read_fd_set;
 
-    FD_ZERO(&read_fd_set);
-
     int running = 1;
 
     char buf[BUFFER_SIZE];
@@ -79,6 +77,7 @@ main(int argc, char** argv) {
     int len;
 
     while (running) {
+        FD_ZERO(&read_fd_set);
         // Add stdin to fd_set
         FD_SET(STDIN_FILENO, &read_fd_set);
         // Add tcp socket to fd_set
@@ -90,7 +89,10 @@ main(int argc, char** argv) {
         if (FD_ISSET(STDIN_FILENO, &read_fd_set)) {
             memset((void*) buf, 0, sizeof(buf));
             len = Read(STDIN_FILENO, (void*) buf, sizeof(buf));
-            Send(fd, (const void*) buf, sizeof(buf), 0);
+            size_t lenOfStdIn = strlen(buf);
+            if (lenOfStdIn > 0 && buf[lenOfStdIn - 1] == '\n')
+                buf[lenOfStdIn - 1] = '\0';
+            Send(fd, (const void*) buf, lenOfStdIn, 0);
             if (/*len == 0*/strlen(buf) == 0) {
                 Shutdown(fd, SHUT_WR);
                 while ((len = Recv(fd, (void*) buf, sizeof(buf), 0)) > 0) {
@@ -104,6 +106,7 @@ main(int argc, char** argv) {
 
         // Data from server
         if (FD_ISSET(fd, &read_fd_set)) {
+            memset((void*) buf, 0, sizeof(buf));
             len = Recv(fd, (void*) buf, sizeof(buf), 0);
             if (len == 0) {
                 running = 0;

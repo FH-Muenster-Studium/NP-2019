@@ -36,8 +36,9 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#define BUFFER_SIZE (1<<16)
-#define PORT 2452 //7
+#define BUFFER_SIZE 140//(1<<16)
+#define BUFFER_RECV_SIZE (1<<16)
+#define PORT 2453 //7
 
 //bsduser222 4222365
 
@@ -54,8 +55,8 @@ main(void) {
     int fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len;
-    ssize_t len;
-    char buf[BUFFER_SIZE];
+    //ssize_t len;
+    //char buf[BUFFER_SIZE];
 
     fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -98,32 +99,51 @@ void* recv_socket(void* args) {
     int client_fd = client_socket_data->client_fd;
     free(client_socket_data);
     char buf[BUFFER_SIZE];
-    int len;
-    do {
-        memset((void*) buf, 0, sizeof(buf));
-        len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
-        if (len <= 0) {
-            Close(client_fd);
-            printf("client closed: %d\n", client_fd);
-        } else {
-            if (send_all(client_fd, buf, len)) {
-                printf("client send: %d\n", client_fd);
-            } else {
-                printf("client not send all: %d\n", client_fd);
+    char bufRecv[BUFFER_RECV_SIZE];
+
+    int running = 1;
+
+    fd_set read_fd_set;
+
+    fd_set write_fd_set;
+
+    while (running) {
+        FD_ZERO(&read_fd_set);
+        FD_ZERO(&write_fd_set);
+
+        FD_SET(client_fd, &read_fd_set);
+        FD_SET(client_fd, &write_fd_set);
+
+        Select(client_fd + 1, &read_fd_set, &write_fd_set, NULL, NULL);
+
+        if (FD_ISSET(client_fd, &read_fd_set)) {
+            printf("recv\n");
+            memset((void*) bufRecv, 0, sizeof(bufRecv));
+            if (Recv(client_fd, (void*) bufRecv, sizeof(bufRecv), 0) < 0) {
+                running = 0;
             }
         }
 
-    } while (len > 0);
+        if (FD_ISSET(client_fd, &write_fd_set)) {
+            printf("send\n");
+            memset((void*) buf, 0, sizeof(buf));
+            int curr = 32;
+            for (int i = 0, length = BUFFER_SIZE - 2; i < length; i++) {
+                buf[i] = (char) curr;
+                curr++;
+                if (curr == 128) {
+                    curr = 32;
+                }
+            }
+            buf[BUFFER_SIZE - 2] = '\n';
+            buf[BUFFER_SIZE - 1] = '\0';
+
+            if (Send(client_fd, buf, sizeof(buf), 0) < 0) {
+                running = 0;
+            }
+        }
+    }
+
     pthread_exit(NULL);
 }
 
-int send_all(int socket, char* buffer, size_t length) {
-    char* ptr = buffer;
-    while (length > 0) {
-        int i = Send(socket, ptr, length, 0);
-        if (i < 1) return 0;
-        ptr += i;
-        length -= i;
-    }
-    return 1;
-}

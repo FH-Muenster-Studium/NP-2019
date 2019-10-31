@@ -23,3 +23,5 @@ tcp_examples/discard_server
 tcp_examples/discard_server.o
 tcp_examples/echo_server.o
 tcp_examples/echo_server
+tcp_examples/chargen_server.o
+tcp_examples/chargen_server
