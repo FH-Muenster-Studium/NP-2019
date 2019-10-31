@@ -126,7 +126,6 @@ void* recv_socket(void* args) {
         }
 
         if (FD_ISSET(client_fd, &read_fd_set)) {
-            printf("recv\n");
             memset((void*) bufRecv, 0, sizeof(bufRecv));
             if (Recv(client_fd, (void*) bufRecv, sizeof(bufRecv), 0) <= 0) {
                 Close(client_fd);
@@ -136,7 +135,6 @@ void* recv_socket(void* args) {
         }
 
         if (FD_ISSET(client_fd, &write_fd_set)) {
-            printf("send\n");
             memset((void*) buf, 0, sizeof(buf));
             int curr = 32;
             for (int i = 0, length = BUFFER_SIZE - 2; i < length; i++) {
