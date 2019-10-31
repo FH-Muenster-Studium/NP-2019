@@ -90,9 +90,9 @@ main(int argc, char** argv) {
             memset((void*) buf, 0, sizeof(buf));
             len = Read(STDIN_FILENO, (void*) buf, sizeof(buf));
             size_t lenOfStdIn = strlen(buf);
-            if (lenOfStdIn > 0 && buf[lenOfStdIn - 1] == '\n')
+            if (lenOfStdIn > 0 && buf[lenOfStdIn - 1] == '\n') {
                 buf[lenOfStdIn - 1] = '\0';
-            Send(fd, (const void*) buf, lenOfStdIn, 0);
+            }
             if (/*len == 0*/strlen(buf) == 0) {
                 Shutdown(fd, SHUT_WR);
                 while ((len = Recv(fd, (void*) buf, sizeof(buf), 0)) > 0) {
@@ -100,7 +100,7 @@ main(int argc, char** argv) {
                 }
                 break;
             } else {
-                Send(fd, (const void*) buf, (size_t) strlen(buf), 0);
+                Send(fd, (const void*) buf, lenOfStdIn, 0);
             }
         }
 
