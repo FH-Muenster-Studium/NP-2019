@@ -37,8 +37,6 @@
 #define BUFFER_SIZE (1<<16)
 #define PORT 2450 //7
 
-//bsduser222 4222365
-
 int
 main(void) {
     int fd;

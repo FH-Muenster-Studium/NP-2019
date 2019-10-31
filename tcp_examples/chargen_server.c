@@ -40,8 +40,6 @@
 #define BUFFER_RECV_SIZE (1<<16)
 #define PORT 2453 //7
 
-//bsduser222 4222365
-
 typedef struct ClientSocketData {
     int client_fd;
 } client_socket_data_t;

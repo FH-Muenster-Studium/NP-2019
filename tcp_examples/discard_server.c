@@ -43,8 +43,6 @@
 #define PORT 2451 //9
 #define MAX_CLIENTS 20
 
-//bsduser222 4222365
-
 int
 main(void) {
     int fd;
