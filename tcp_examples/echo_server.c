@@ -53,6 +53,10 @@ main(void) {
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len;
 
+    int client_fd;
+
+    int running = 1;
+
     fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     memset((void*) &server_addr, 0, sizeof(server_addr));
@@ -65,10 +69,6 @@ main(void) {
     Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
 
     Listen(fd, 5);
-
-    int client_fd;
-
-    int running = 1;
 
     while (running) {
         printf("client accept\n");
@@ -94,7 +94,7 @@ void* recv_socket(void* args) {
     int client_fd = client_socket_data->client_fd;
     free(client_socket_data);
     char buf[BUFFER_SIZE];
-    int len;
+    ssize_t len;
     do {
         memset((void*) buf, 0, sizeof(buf));
         len = Recv(client_fd, (void*) buf, sizeof(buf), 0);

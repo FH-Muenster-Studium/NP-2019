@@ -42,6 +42,7 @@
 #define BUFFER_SIZE (1<<16)
 #define PORT 2451 //9
 #define MAX_CLIENTS 20
+#define INVALID_CLIENT -1
 
 int
 main(void) {
@@ -50,6 +51,20 @@ main(void) {
     socklen_t client_addr_len;
     ssize_t len;
     char buf[BUFFER_SIZE];
+
+    int client_fd;
+
+    int running = 1;
+
+    fd_set read_fd_set;
+
+    int maxFd;
+
+    int client_sockets[MAX_CLIENTS];
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        client_sockets[i] = INVALID_CLIENT;
+    }
 
     fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -64,20 +79,6 @@ main(void) {
 
     Listen(fd, 5);
 
-    int client_fd;
-
-    int running = 1;
-
-    fd_set read_fd_set;
-
-    int maxFd;
-
-    int client_sockets[MAX_CLIENTS];
-
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-        client_sockets[i] = 0;
-    }
-
     while (running) {
         FD_ZERO(&read_fd_set);
 
@@ -86,7 +87,7 @@ main(void) {
         maxFd = fd;
 
         for (int i = 0; i < MAX_CLIENTS; i++) {
-            if (client_sockets[i] != 0) {
+            if (client_sockets[i] != INVALID_CLIENT) {
                 FD_SET(client_sockets[i], &read_fd_set);
                 maxFd = MAX(client_sockets[i], maxFd);
             }
@@ -101,40 +102,38 @@ main(void) {
             client_fd = Accept(fd, (struct sockaddr*) &client_addr, &client_addr_len);
             printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
 
-            int acceptedClient = 0;
+            int clientAccepted = 0;
 
             for (int i = 0; i < MAX_CLIENTS; i++) {
-                if (client_sockets[i] == 0) {
+                if (client_sockets[i] == INVALID_CLIENT) {
                     client_sockets[i] = client_fd;
-                    acceptedClient = 1;
+                    clientAccepted = 1;
                     break;
                 }
             }
 
-            if (!acceptedClient) {
+            if (!clientAccepted) {
                 printf("client not accepted, max clients is reached\n");
             }
         }
 
         for (int i = 0; i < MAX_CLIENTS; i++) {
             client_fd = client_sockets[i];
+            if (client_fd == INVALID_CLIENT) continue;
             if (FD_ISSET(client_fd, &read_fd_set)) {
-                //printf("client data: %d\n", client_fd);
                 len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
-                if (len <= 0) {
-                    Close(client_fd);
-                    printf("client closed: %d\n", client_fd);
-                    for (int j = 0; j < MAX_CLIENTS; j++) {
-                        if (client_sockets[i] == client_fd) {
-                            client_sockets[i] = 0;
-                        }
+                if (len > 0) continue;
+                Close(client_fd);
+                printf("client closed fd: %d\n", client_fd);
+                for (int j = 0; j < MAX_CLIENTS; j++) {
+                    if (client_sockets[i] == client_fd) {
+                        client_sockets[i] = INVALID_CLIENT;
                     }
-                } else {
-                    //printf("client read: %d\n", client_fd);
                 }
             }
         }
     }
+
     Close(fd);
 
     return 0;
