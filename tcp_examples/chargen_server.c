@@ -122,6 +122,7 @@ void* recv_socket(void* args) {
 
         if (FD_ISSET(client_fd, &except_fd_set)) {
             running = 0;
+            break;
         }
 
         if (FD_ISSET(client_fd, &read_fd_set)) {
