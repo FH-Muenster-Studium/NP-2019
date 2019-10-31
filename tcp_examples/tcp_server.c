@@ -87,14 +87,9 @@ main(void) {
         time(&raw_time);
         time_info = localtime(&raw_time);
 
-        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d\n", time_info->tm_mday, time_info->tm_mon + 1,
+        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d", time_info->tm_mday, time_info->tm_mon + 1,
                 time_info->tm_year + 1900,
                 time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
-
-        size_t lenOfStdIn = strlen(timeBuffer);
-        if (lenOfStdIn > 0 && buf[lenOfStdIn - 1] == '\n') {
-            timeBuffer[lenOfStdIn - 1] = '\0';
-        }
 
         printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
 
