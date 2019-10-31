@@ -84,7 +84,7 @@ main(void) {
         pthread_t p_thread;
         pthread_attr_t attrs;
         Pthread_attr_init(&attrs);
-        Pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+        //Pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
         client_socket_data_t* client_socket_data = calloc(1, sizeof(client_socket_data_t));
         client_socket_data->client_fd = client_fd;
         Pthread_create(&p_thread, &attrs, &recv_socket, client_socket_data);
@@ -107,20 +107,30 @@ void* recv_socket(void* args) {
 
     fd_set write_fd_set;
 
+    fd_set except_fd_set;
+
     while (running) {
         FD_ZERO(&read_fd_set);
         FD_ZERO(&write_fd_set);
+        FD_ZERO(&except_fd_set);
 
         FD_SET(client_fd, &read_fd_set);
         FD_SET(client_fd, &write_fd_set);
+        FD_SET(client_fd, &except_fd_set);
 
-        Select(client_fd + 1, &read_fd_set, &write_fd_set, NULL, NULL);
+        Select(client_fd + 1, &read_fd_set, &write_fd_set, &except_fd_set, NULL);
+
+        if (FD_ISSET(client_fd, &except_fd_set)) {
+            running = 0;
+        }
 
         if (FD_ISSET(client_fd, &read_fd_set)) {
             printf("recv\n");
             memset((void*) bufRecv, 0, sizeof(bufRecv));
-            if (Recv(client_fd, (void*) bufRecv, sizeof(bufRecv), 0) < 0) {
+            if (Recv(client_fd, (void*) bufRecv, sizeof(bufRecv), 0) <= 0) {
+                Close(client_fd);
                 running = 0;
+                break;
             }
         }
 
@@ -140,6 +150,7 @@ void* recv_socket(void* args) {
 
             if (Send(client_fd, buf, sizeof(buf), 0) < 0) {
                 running = 0;
+                break;
             }
         }
     }
