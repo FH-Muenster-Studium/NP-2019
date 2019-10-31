@@ -123,7 +123,7 @@ main(void) {
             if (FD_ISSET(client_fd, &read_fd_set)) {
                 len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
                 if (len > 0) {
-                    printf("data len:%ld\n", len);
+                    printf("data len:%ld fd: %d\n", len, client_fd);
                     continue;
                 }
                 Close(client_fd);
