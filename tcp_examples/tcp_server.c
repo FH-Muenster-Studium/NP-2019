@@ -91,6 +91,9 @@ main(void) {
                 time_info->tm_year + 1900,
                 time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
 
+        timeBuffer[BUFFER_SIZE - 2] = '\n';
+        timeBuffer[BUFFER_SIZE - 1] = '\0';
+
         printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
 
         Send(client_fd, (const void*) timeBuffer, sizeof(timeBuffer), 0);
