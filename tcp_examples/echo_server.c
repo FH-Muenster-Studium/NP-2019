@@ -54,8 +54,6 @@ main(void) {
     int fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len;
-    ssize_t len;
-    char buf[BUFFER_SIZE];
 
     fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -104,12 +102,12 @@ void* recv_socket(void* args) {
         len = Recv(client_fd, (void*) buf, sizeof(buf), 0);
         if (len <= 0) {
             Close(client_fd);
-            printf("client closed: %d\n", client_fd);
+            printf("client closed fd: %d\n", client_fd);
         } else {
             if (send_all(client_fd, buf, len)) {
-                printf("client send: %d\n", client_fd);
+                printf("client send fd: %d\n", client_fd);
             } else {
-                printf("client not send all: %d\n", client_fd);
+                printf("client not send all fd: %d\n", client_fd);
             }
         }
 
