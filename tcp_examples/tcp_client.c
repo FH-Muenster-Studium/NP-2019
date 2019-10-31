@@ -54,6 +54,16 @@ main(int argc, char** argv) {
 
     struct sockaddr_in server_addr;
 
+    fd_set read_fd_set;
+
+    int running = 1;
+
+    char buf[BUFFER_SIZE];
+
+    int len;
+
+    int shutdown = 0;
+
     fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     memset(&server_addr, 0, sizeof(server_addr));
@@ -67,16 +77,6 @@ main(int argc, char** argv) {
     }
 
     Connect(fd, (struct sockaddr*) &server_addr, sizeof(server_addr));
-
-    fd_set read_fd_set;
-
-    int running = 1;
-
-    char buf[BUFFER_SIZE];
-
-    int len;
-
-    int shutdown = 0;
 
     while (running) {
         FD_ZERO(&read_fd_set);
