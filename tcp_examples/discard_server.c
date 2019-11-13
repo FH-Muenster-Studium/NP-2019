@@ -100,20 +100,22 @@ main(void) {
             memset((void*) &client_addr, 0, sizeof(client_addr));
             client_addr_len = (socklen_t) sizeof(client_addr);
             client_fd = Accept(fd, (struct sockaddr*) &client_addr, &client_addr_len);
-            printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
+            if (client_fd > 0) {
+                printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
 
-            int clientAccepted = 0;
+                int clientAccepted = 0;
 
-            for (int i = 0; i < MAX_CLIENTS; i++) {
-                if (client_sockets[i] == INVALID_CLIENT) {
-                    client_sockets[i] = client_fd;
-                    clientAccepted = 1;
-                    break;
+                for (int i = 0; i < MAX_CLIENTS; i++) {
+                    if (client_sockets[i] == INVALID_CLIENT) {
+                        client_sockets[i] = client_fd;
+                        clientAccepted = 1;
+                        break;
+                    }
                 }
-            }
 
-            if (!clientAccepted) {
-                printf("client not accepted, max clients is reached\n");
+                if (!clientAccepted) {
+                    printf("client not accepted, max clients is reached\n");
+                }
             }
         }
 
