@@ -67,7 +67,7 @@ main(void) {
     server_addr.sin6_len = sizeof(struct sockaddr_in6);
 #endif
     struct in6_addr any_addr = IN6ADDR_ANY_INIT;
-    server_addr.sin6_addr = any_addr;//.s_addr = htonl(INADDR_ANY);
+    server_addr.sin6_addr = any_addr;
     server_addr.sin6_port = htons(PORT);
     Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
 

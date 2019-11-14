@@ -113,6 +113,8 @@ main(int argc, char** argv) {
 
     } while ((curr = curr->ai_next) != NULL);
 
+    freeaddrinfo(result);
+
     if (fd == -1) {
         printf("No server to connect\n");
         return 0;
@@ -152,8 +154,6 @@ main(int argc, char** argv) {
             }
         }
     }
-
-    freeaddrinfo(result);
 
     Close(fd);
 
