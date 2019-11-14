@@ -49,6 +49,12 @@ int main(int argc, char** argv) {
                 curr_address = &(((struct sockaddr_in*) curr->ai_addr)->sin_addr);
             }
 
+            if (curr->ai_protocol == IPPROTO_TCP) {
+                printf("tcp\n");
+            } else if (curr->ai_protocol == IPPROTO_UDP) {
+                printf("udp\n");
+            }
+
             Inet_ntop(curr->ai_addr->sa_family, curr_address,
                       host_name_buffer, sizeof(host_name_buffer));
 
