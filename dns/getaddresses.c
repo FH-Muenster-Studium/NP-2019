@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 
             printf("Inet_ntop: %s\n", host_name_buffer);
 
-            getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
+            Getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
                         NI_NUMERICHOST);
             printf("getnameinfo: %s\n", host_name_buffer);
 

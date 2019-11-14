@@ -137,3 +137,20 @@ const char *Inet_ntop(int af, const void *src,
     }
     return result_code;
 }
+
+int Getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host,
+                size_t	hostlen, char *serv, size_t servlen, int flags) {
+    int result_code;
+    if ((result_code = getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)) < 0) {
+        perror("getnameinfo");
+    }
+    return result_code;
+}
+
+int Inet_pton(int af, const char * restrict src, void * restrict dst) {
+    int result_code;
+    if ((result_code = inet_pton(af, src, dst)) < 0) {
+        perror("inet_pton");
+    }
+    return result_code;
+}

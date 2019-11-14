@@ -63,4 +63,9 @@ int Getaddrinfo(const char * host_name, const char * service_name,
 const char *Inet_ntop(int af, const void *src,
                       char *dst, socklen_t size);
 
+int Getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host,
+            size_t	hostlen, char *serv, size_t servlen, int flags);
+
+int Inet_pton(int af, const char * restrict src, void * restrict dst);
+
 #endif //DAYTIME_CLIENT_SOCKET_H

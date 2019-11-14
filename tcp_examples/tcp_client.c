@@ -37,6 +37,26 @@
 #define BUFFER_SIZE (1<<16)
 #define MESSAGE_SIZE (9216)
 
+void fill_hints(struct addrinfo* hints) {
+    memset(hints, 0, sizeof(struct addrinfo));
+    hints->ai_family = AF_UNSPEC;
+    hints->ai_socktype = SOCK_STREAM;
+    hints->ai_protocol = IPPROTO_TCP;
+    hints->ai_flags = 0;
+    hints->ai_canonname = NULL;
+    hints->ai_addr = NULL;
+    hints->ai_next = NULL;
+}
+
+in_port_t get_in_port(struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET) {
+        return (((struct sockaddr_in*)sa)->sin_port);
+    }
+
+    return (((struct sockaddr_in6*)sa)->sin6_port);
+}
+
 int
 main(int argc, char** argv) {
     if (argc < 2) {
@@ -48,11 +68,11 @@ main(int argc, char** argv) {
         return 0;
     }
 
-    int port = atoi(argv[2]);
+    struct addrinfo hints;
+
+    struct addrinfo* result, * curr;
 
     int fd;
-
-    struct sockaddr_in server_addr;
 
     fd_set read_fd_set;
 
@@ -60,23 +80,43 @@ main(int argc, char** argv) {
 
     char buf[BUFFER_SIZE];
 
+    char host_name_buffer[NI_MAXHOST];
+
     int len;
 
     int shutdown = 0;
 
-    fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    fill_hints(&hints);
 
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-#ifdef HAVE_SIN_LEN
-    server_addr.sin_len = sizeof(struct sockaddr_in);
-#endif
-    server_addr.sin_port = htons(port);
-    if ((server_addr.sin_addr.s_addr = (in_addr_t) inet_addr(argv[1])) == INADDR_NONE) {
-        fprintf(stderr, "Invalid address\n");
+    Getaddrinfo(argv[1], argv[2], &hints, &result);
+
+    if (result == NULL) {
+        printf("No address found for: %s:%s \n", argv[1], argv[2]);
+        return 0;
     }
 
-    Connect(fd, (struct sockaddr*) &server_addr, sizeof(server_addr));
+    curr = result;
+
+    do {
+        Getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
+                    NI_NUMERICHOST);
+        printf("try connect to: %s %d\n",host_name_buffer, ntohs(get_in_port(curr->ai_addr)));
+        fd = Socket(curr->ai_family, curr->ai_socktype, curr->ai_protocol);
+        if (Connect(fd, curr->ai_addr, curr->ai_addrlen) != 0) {
+            Close(fd);
+            fd = -1;
+        } else {
+            printf("connected\n");
+            break;
+        }
+        printf("------\n");
+
+    } while ((curr = curr->ai_next) != NULL);
+
+    if (fd == -1) {
+        printf("No server to connect\n");
+        return 0;
+    }
 
     while (running) {
         FD_ZERO(&read_fd_set);
@@ -112,6 +152,8 @@ main(int argc, char** argv) {
             }
         }
     }
+
+    freeaddrinfo(result);
 
     Close(fd);
 

@@ -50,22 +50,25 @@ int send_all(int socket, char* buffer, size_t length);
 int
 main(void) {
     int fd;
-    struct sockaddr_in server_addr, client_addr;
+    struct sockaddr_in6 server_addr, client_addr;
     socklen_t client_addr_len;
 
     int client_fd;
 
     int running = 1;
 
-    fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    char inet6_address_buffer[INET6_ADDRSTRLEN];
+
+    fd = Socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
     memset((void*) &server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
+    server_addr.sin6_family = AF_INET6;
 #ifdef HAVE_SIN_LEN
-    server_addr.sin_len = sizeof(struct sockaddr_in);
+    server_addr.sin6_len = sizeof(struct sockaddr_in6);
 #endif
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(PORT);
+    struct in6_addr any_addr = IN6ADDR_ANY_INIT;
+    server_addr.sin6_addr = any_addr;//.s_addr = htonl(INADDR_ANY);
+    server_addr.sin6_port = htons(PORT);
     Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
 
     Listen(fd, 5);
@@ -75,7 +78,8 @@ main(void) {
         memset((void*) &client_addr, 0, sizeof(client_addr));
         client_addr_len = (socklen_t) sizeof(client_addr);
         client_fd = Accept(fd, (struct sockaddr*) &client_addr, &client_addr_len);
-        printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
+        Inet_ntop(AF_INET6, &(client_addr.sin6_addr), inet6_address_buffer, INET6_ADDRSTRLEN);
+        printf("client accepted: %d %s\n", client_fd, inet6_address_buffer);
         pthread_t p_thread;
         pthread_attr_t attrs;
         Pthread_attr_init(&attrs);

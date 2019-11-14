@@ -14,6 +14,10 @@
 // For close
 #include <unistd.h>
 #include <pthread.h>
+// For addrinfo
+#include <netdb.h>
+// For inet_ntop
+#include <arpa/inet.h>
 
 int Socket(int address_family, int type, int protocol);
 
@@ -33,7 +37,7 @@ ssize_t Recv(int fd, void* buffer, size_t buffer_size, int flags);
 
 ssize_t Send(int fd, const void* buffer, size_t buffer_size, int flags);
 
-void Connect(int fd, struct sockaddr* server_socket_address, size_t server_socket_address_size);
+int Connect(int fd, struct sockaddr* server_socket_address, size_t server_socket_address_size);
 
 void Listen(int fd, int backlog);
 
@@ -51,5 +55,17 @@ void Pthread_create(pthread_t* p_thread,
 void Pthread_attr_init(pthread_attr_t* attr);
 
 void Pthread_attr_setdetachstate(pthread_attr_t* attr, int state);
+
+int Getaddrinfo(const char * host_name, const char * service_name,
+                const struct addrinfo * hints,
+                struct addrinfo ** result);
+
+const char *Inet_ntop(int af, const void *src,
+                      char *dst, socklen_t size);
+
+int Getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host,
+            size_t	hostlen, char *serv, size_t servlen, int flags);
+
+int Inet_pton(int af, const char * restrict src, void * restrict dst);
 
 #endif //DAYTIME_CLIENT_SOCKET_H

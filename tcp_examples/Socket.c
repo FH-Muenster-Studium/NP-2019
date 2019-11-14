@@ -72,10 +72,12 @@ ssize_t Send(int fd, const void* buffer, size_t buffer_size, int flags) {
     return len;
 }
 
-void Connect(int fd, struct sockaddr* server_socket_address, size_t server_socket_address_size) {
-    if (connect(fd, server_socket_address, server_socket_address_size) < 0) {
+int Connect(int fd, struct sockaddr* server_socket_address, size_t server_socket_address_size) {
+    int result_code;
+    if ((result_code = connect(fd, server_socket_address, server_socket_address_size)) < 0) {
         perror("connect");
     }
+    return result_code;
 }
 
 void Listen(int fd, int backlog) {
@@ -117,4 +119,40 @@ void Pthread_attr_setdetachstate(pthread_attr_t* attr, int state) {
     if (pthread_attr_setdetachstate(attr, state) < 0) {
         perror("pthread_attr_setdetachstate");
     }
+}
+
+int Getaddrinfo(const char * host_name, const char * service_name,
+                            const struct addrinfo * hints,
+                            struct addrinfo ** result) {
+    int result_code;
+    if ((result_code = getaddrinfo(host_name, service_name, hints, result)) < 0) {
+        perror("getaddrinfo");
+    }
+    return result_code;
+}
+
+const char *Inet_ntop(int af, const void *src,
+                      char *dst, socklen_t size) {
+    const char* result_code;
+    if ((result_code = inet_ntop(af, src, dst, size)) < 0) {
+        perror("inet_ntop");
+    }
+    return result_code;
+}
+
+int Getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host,
+                size_t	hostlen, char *serv, size_t servlen, int flags) {
+    int result_code;
+    if ((result_code = getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)) < 0) {
+        perror("getnameinfo");
+    }
+    return result_code;
+}
+
+int Inet_pton(int af, const char * restrict src, void * restrict dst) {
+    int result_code;
+    if ((result_code = inet_pton(af, src, dst)) < 0) {
+        perror("inet_pton");
+    }
+    return result_code;
 }
