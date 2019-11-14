@@ -53,6 +53,8 @@ int main(int argc, char** argv) {
                 printf("tcp\n");
             } else if (curr->ai_protocol == IPPROTO_UDP) {
                 printf("udp\n");
+            } else  {
+                printf("protocol: %d\n", curr->ai_protocol);
             }
 
             Inet_ntop(curr->ai_addr->sa_family, curr_address,
