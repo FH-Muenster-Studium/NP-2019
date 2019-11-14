@@ -25,3 +25,6 @@ tcp_examples/echo_server.o
 tcp_examples/echo_server
 tcp_examples/chargen_server.o
 tcp_examples/chargen_server
+dns/config.status
+dns/getaddresses
+dns/getaddresses.o
