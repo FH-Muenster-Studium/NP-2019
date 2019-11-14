@@ -23,6 +23,8 @@ int main(int argc, char** argv) {
 
     char host_name_buffer[NI_MAXHOST];
 
+    const void* curr_address;
+
     if (argc < 2) {
         fprintf(stderr, "Provide address\n");
         return 0;
@@ -34,27 +36,34 @@ int main(int argc, char** argv) {
 
     Getaddrinfo(argv[1], NULL, &hints, &result);
 
-    curr = result;
+    if (result == NULL) {
+        printf("No address found \n");
+    } else {
 
-    do {
-        if (curr->ai_addr->sa_family == AF_INET) {
-            Inet_ntop(curr->ai_addr->sa_family, &(((struct sockaddr_in*) curr->ai_addr)->sin_addr),
+        curr = result;
+
+        do {
+            if (curr->ai_addr->sa_family == AF_INET6) {
+                curr_address = &(((struct sockaddr_in6*) curr->ai_addr)->sin6_addr);
+            } else {
+                curr_address = &(((struct sockaddr_in*) curr->ai_addr)->sin_addr);
+            }
+
+            Inet_ntop(curr->ai_addr->sa_family, curr_address,
                       host_name_buffer, sizeof(host_name_buffer));
-        } else if (curr->ai_addr->sa_family == AF_INET6) {
-            Inet_ntop(curr->ai_addr->sa_family, &(((struct sockaddr_in6*) curr->ai_addr)->sin6_addr),
-                      host_name_buffer, sizeof(host_name_buffer));
-        }
 
-        printf("Inet_ntop: %s\n", host_name_buffer);
+            printf("Inet_ntop: %s\n", host_name_buffer);
 
-        getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
-                    NI_NUMERICHOST);
-        printf("getnameinfo: %s\n", host_name_buffer);
+            getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
+                        NI_NUMERICHOST);
+            printf("getnameinfo: %s\n", host_name_buffer);
 
-        printf("------\n");
+            printf("------\n");
 
-    } while ((curr = curr->ai_next) != NULL);
+        } while ((curr = curr->ai_next) != NULL);
+    }
 
     freeaddrinfo(result);
+
     return 0;
 }
