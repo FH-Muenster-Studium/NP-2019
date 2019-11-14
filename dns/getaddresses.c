@@ -53,6 +53,8 @@ int main(int argc, char** argv) {
                 printf("tcp\n");
             } else if (curr->ai_protocol == IPPROTO_UDP) {
                 printf("udp\n");
+            } else if (curr->ai_protocol == IPPROTO_SCTP) {
+                printf("sctp\n");
             } else  {
                 printf("protocol: %d\n", curr->ai_protocol);
             }
