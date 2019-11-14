@@ -69,7 +69,8 @@ main(void) {
     struct in6_addr any_addr = IN6ADDR_ANY_INIT;
     server_addr.sin6_addr = any_addr;
     server_addr.sin6_port = htons(PORT);
-    setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)0, sizeof(void*));
+    int* option = 0;
+    setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &option, sizeof(int));
     Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
 
     Listen(fd, 5);
