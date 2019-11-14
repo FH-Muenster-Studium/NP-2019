@@ -102,9 +102,11 @@ main(int argc, char** argv) {
                     NI_NUMERICHOST);
         printf("try connect to: %s %d\n",host_name_buffer, ntohs(get_in_port(curr->ai_addr)));
         fd = Socket(curr->ai_family, curr->ai_socktype, curr->ai_protocol);
+        setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&fd, sizeof(fd));
         if (Connect(fd, curr->ai_addr, curr->ai_addrlen) != 0) {
             Close(fd);
             fd = -1;
+            printf("not connected\n");
         } else {
             printf("connected\n");
             break;
