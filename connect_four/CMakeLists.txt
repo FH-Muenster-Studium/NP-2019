@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8.9)
+project (connect_four_server)
+add_executable(connect_four_server connect_four_server.c Socket.c Socket.h cblib.h connect_four_lib.c connect_four_lib.h)
+project (connect_four_client)
+add_executable(connect_four_client connect_four_client.c Socket.c Socket.h 4clib.c 4clib.h cblib.c cblib.h connect_four_lib.c connect_four_lib.h)

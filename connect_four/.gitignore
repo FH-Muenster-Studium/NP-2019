@@ -1,0 +1,15 @@
+.DS_Store
+.idea/*
+*/.deps/*
+*/*.cache/*
+CMakeCache.txt
+*/cmake-build-debug/*
+*.log
+Socket.o
+tcp_server.o
+tcp_client.o
+tcp_client
+tcp_server
+configure
+Makefile
+Makefile.in
