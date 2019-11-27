@@ -59,7 +59,11 @@ void socket_callback(void* args) {
     int fd = socket_callback_args->fd;
     char* buf = socket_callback_args->buf;
     client_t* client = socket_callback_args->client;
-    ssize_t len = Recv(fd, (void*) (buf), sizeof(buf), 0);
+    struct sockaddr client_addr;
+    socklen_t client_addr_len;
+    client_addr_len = (socklen_t) sizeof(client_addr);
+    memset((void *) &client_addr, 0, sizeof(client_addr));
+    ssize_t len = Recvfrom(fd, (void*) (buf), sizeof(buf), 0, &client_addr, &client_addr_len);
     if (len < sizeof(connect_four_header_t)) {
         printf("len: %ld smaller then header\n", sizeof(connect_four_header_t));
     }
@@ -67,11 +71,20 @@ void socket_callback(void* args) {
     switch (header->type) {
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN:
             if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
-                //TODO:
-                //TODO: client_valid_ack is different here, it needs to be 0 not 1
-            } else if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN) {
+                client->other_client_addr_len = client_addr_len; //TODO: not required
+                client->other_client_addr = &client_addr; //TODO: not required
+                client->other_client_port = 0; //TODO: not required
+                client->other_client_fd = init_socket_other_client(&client_addr, client_addr_len);
+                client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
+            }
+            if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN) {
                 if (header->length < sizeof(connect_four_set_column_t)) return;
                 connect_four_set_column_t* set_column = (connect_four_set_column_t*) buf;
+
+                if (set_column->column >= NUMBER_OF_COLUMNS || set_column->column < 0 || !valid_move(set_column->column)) {
+                    //TODO: send error
+                    return;
+                }
 
                 if (!client_valid_ack(client, set_column->seq)) return;
                 client->seq = set_column->seq + 1;
@@ -80,8 +93,20 @@ void socket_callback(void* args) {
                 set_column_ack.seq = set_column->seq;
                 int size = sizeof(set_column_ack);
                 memcpy(buf, &set_column_ack, size);
-                client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_USER_INPUT;
                 client_send_message(client, buf, size);
+
+                make_move(set_column->column, client_get_player_id(client));
+                int winnerPlayerId = winner();
+                if (winnerPlayerId != 0) {
+                    if (winnerPlayerId == client_get_player_id(client)) {
+                        printf("You won\n");
+                    } else {
+                        printf("You lost\n");
+                    }
+                    client->state = CONNECT_FOUR_CLIENT_STATE_GAME_END;
+                } else {
+                    client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_USER_INPUT;
+                }
             }
             break;
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN_ACK:

@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include "Socket.h"
+#include "4clib.h"
 
 // Network protocol (messages)
 
@@ -95,5 +96,7 @@ void init_client(client_t* client, client_addr_t other_client_addr, client_addr_
 ssize_t client_send_message(client_t* client, char* buf, ssize_t len);
 
 bool client_valid_ack(client_t* client, int seq);
+
+int client_get_player_id(client_t* client);
 
 #endif //CONNECT_FOUR_CLIENT_CONNECT_FOUR_LIB_H

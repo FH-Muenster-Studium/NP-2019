@@ -27,3 +27,7 @@ bool client_valid_ack(client_t* client, int seq) {
     if (client->seq + 1 == seq) return true;
     return false;
 }
+
+int client_get_player_id(client_t* client) {
+    return client->first ? PLAYER_1 : PLAYER_2;
+}
