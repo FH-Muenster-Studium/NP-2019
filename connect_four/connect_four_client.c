@@ -138,7 +138,7 @@ void socket_callback(void* args) {
     switch (header_type) {
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN:
             if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN) {
-                if (header_length < sizeof(connect_four_set_column_content_t)) return;
+                if (header_length < (sizeof(uint32_t) + sizeof(uint16_t))) return;
                 connect_four_set_column_message_t set_column2;
                 read_set_column(buf, &set_column2);
                 connect_four_set_column_message_t* set_column = &set_column2;//(connect_four_set_column_message_t*) buf;

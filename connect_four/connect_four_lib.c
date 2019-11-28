@@ -120,7 +120,7 @@ void read_heartbeat_ack(char buf[], ssize_t len, connect_four_heartbeat_ack_mess
 void client_send_set_column(client_t* client, char buf[], uint16_t column) {
     connect_four_set_column_message_t message;
     message.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN);
-    message.length = htons(sizeof(connect_four_set_column_content_t));
+    message.length = htons(sizeof(uint32_t) + sizeof(uint16_t));
     message.column = htons(column);
     message.seq = htonl(client->seq);
     memset(message.padding, 0, 2);
