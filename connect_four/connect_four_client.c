@@ -110,6 +110,7 @@ void socket_callback(void* args) {
     client_addr_len = (socklen_t) sizeof(client_addr);
     memset((void*) &client_addr, 0, sizeof(client_addr));
     char buf[BUFFER_SIZE];
+    memset(buf, 0, sizeof(buf));
     ssize_t len = Recvfrom(fd, buf, sizeof(buf), 0, &client_addr, &client_addr_len);
     if (len < 0) return;
     printf("recv len:%ld\n", len);
