@@ -142,7 +142,12 @@ void client_send_set_column_ack(client_t* client, char buf[], uint32_t seq) {
     set_column_ack.length = htons(sizeof(connect_four_set_column_ack_content_t));
     set_column_ack.seq = htonl(seq);
     int size = sizeof(set_column_ack);
-    memcpy(buf, &set_column_ack, size);
+    //memcpy(buf, &set_column_ack, size);
+
+    int16ToChar(buf, set_column_ack.type);
+    int16ToChar(buf + sizeof(uint16_t), set_column_ack.length);
+    int32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t), set_column_ack.seq);
+
     client_send_message(client, buf, size);
 }
 
