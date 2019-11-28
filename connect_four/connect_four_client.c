@@ -127,15 +127,12 @@ void socket_callback(void* args) {
     free(s);*/
 
     if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
-        printf("first message received from client\n");
         client->other_client_addr_len = client_addr_len; //TODO: not required
         client->other_client_addr = &client_addr; //TODO: not required
 
         Connect(client->socket_fd, &client_addr, client_addr_len);
-        printf("connect to port and ip:%d\n", get_in_port(&client_addr));
 
         client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
-        printf("now waiting for turn\n");
     }
     switch (header->type) {
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN:
@@ -178,21 +175,23 @@ void socket_callback(void* args) {
             client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
             break;
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT: {
-            printf("received heartbeat size header: %d %lld %lld\n", header->length, len, sizeof(connect_four_header_t));
             connect_four_heartbeat_message_t* heartbeat_message = (connect_four_heartbeat_message_t*) socket_callback_args->buf;
             if (header->length != (len - sizeof(connect_four_header_t))) return;
-            client_send_heartbeat_ack(client, heartbeat_message->data, header->length);
+            printf("hb len h:%d\n", atoi(heartbeat_message->data));
+            //client_send_heartbeat_ack(client, socket_callback_args->buf, heartbeat_message->data, header->length);
             break;
         }
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK: {
             connect_four_heartbeat_ack_message_t* heartbeat_ack_message = (connect_four_heartbeat_ack_message_t*) socket_callback_args->buf;
             if (header->length != (len - sizeof(connect_four_header_t))) return;
-            if (client->heartbeat_count == (int64_t) heartbeat_ack_message->data) {
+            printf("data: %s\n", heartbeat_ack_message->data);
+            ++client->heartbeat_count;
+            /*if (client->heartbeat_count == (int64_t) heartbeat_ack_message->data) {
                 time_t msec = time(NULL) * 1000;
                 client->last_heartbeat_received = msec;
                 ++client->heartbeat_count;
                 printf("heartbeat ack count:%lld\n", client->heartbeat_count);
-            }
+            }*/
             break;
         }
     }

@@ -101,7 +101,7 @@ int client_get_player_id(client_t* client);
 
 void client_send_set_column(client_t* client, char buf[], uint16_t column);
 
-void client_send_heartbeat_ack(client_t* client, char buf[], ssize_t len);
+void client_send_heartbeat_ack(client_t* client, char buf[], char data[], ssize_t len);
 
 void client_send_heartbeat(client_t* client, char buf[]);
 
