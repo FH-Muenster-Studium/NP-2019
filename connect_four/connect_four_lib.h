@@ -124,4 +124,8 @@ void read_set_column(char buf[], connect_four_set_column_message_t* message);
 
 void read_set_column_ack(char buf[], connect_four_set_column_ack_message_t* message);
 
+void read_heartbeat(char buf[], ssize_t len, connect_four_heartbeat_message_t* message);
+
+void read_heartbeat_ack(char buf[], ssize_t len, connect_four_heartbeat_ack_message_t* message);
+
 #endif //CONNECT_FOUR_CLIENT_CONNECT_FOUR_LIB_H

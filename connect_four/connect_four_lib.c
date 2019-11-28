@@ -103,6 +103,20 @@ void read_set_column_ack(char buf[], connect_four_set_column_ack_message_t* mess
     message->seq = ntohl(charToU32bitNum(buf + sizeof(uint16_t) +  + sizeof(uint16_t)));
 }
 
+void read_heartbeat(char buf[], ssize_t len, connect_four_heartbeat_message_t* message) {
+    message->type = ntohs(charToU16bitNum(buf));
+    message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
+    message->data = malloc(len);
+    memcpy(message->data, buf + sizeof(uint16_t) + sizeof(uint16_t), len);
+}
+
+void read_heartbeat_ack(char buf[], ssize_t len, connect_four_heartbeat_ack_message_t* message) {
+    message->type = ntohs(charToU16bitNum(buf));
+    message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
+    message->data = malloc(len);
+    memcpy(message->data, buf + sizeof(uint16_t) + sizeof(uint16_t), len);
+}
+
 void client_send_set_column(client_t* client, char buf[], uint16_t column) {
     connect_four_set_column_message_t message;
     message.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN);

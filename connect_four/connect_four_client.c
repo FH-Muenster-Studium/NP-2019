@@ -175,13 +175,19 @@ void socket_callback(void* args) {
             client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
             break;
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT: {
-            connect_four_heartbeat_message_t* heartbeat_message = (connect_four_heartbeat_message_t*) buf;
-            if (header_length != (len - sizeof(connect_four_header_t))) return;
-            client_send_heartbeat_ack(client, buf, heartbeat_message->data, header_length);
+            connect_four_heartbeat_message_t heartbeat_message2;
+            read_heartbeat(buf, header_length, &heartbeat_message2);
+            connect_four_heartbeat_message_t* heartbeat_message = &heartbeat_message2;//(connect_four_heartbeat_message_t*) buf;
+            if (header_length == (len - sizeof(connect_four_header_t))) {
+                client_send_heartbeat_ack(client, buf, heartbeat_message->data, header_length);
+            }
+            free(heartbeat_message2.data);
             break;
         }
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK: {
-            connect_four_heartbeat_ack_message_t* heartbeat_ack_message = (connect_four_heartbeat_ack_message_t*) buf;
+            connect_four_heartbeat_ack_message_t heartbeat_ack_message2;
+            read_heartbeat_ack(buf, header_length, &heartbeat_ack_message2);
+            connect_four_heartbeat_ack_message_t* heartbeat_ack_message = &heartbeat_ack_message2;//(connect_four_heartbeat_ack_message_t*) buf;
             if (header_length!= (len - sizeof(connect_four_header_t))) return;
             if (client->heartbeat_count == atoi(heartbeat_ack_message->data)) {
                 time_t msec = time(NULL) * 1000;
@@ -189,6 +195,7 @@ void socket_callback(void* args) {
                 ++client->heartbeat_count;
                 //printf("heartbeat ack count:%lld\n", client->heartbeat_count);
             }
+            free(heartbeat_ack_message2.data);
             break;
         }
     }
