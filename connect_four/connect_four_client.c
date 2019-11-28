@@ -48,10 +48,18 @@ int get_port_of_socket(int fd) {
 
 in_port_t get_in_port(struct sockaddr* sa) {
     if (sa->sa_family == AF_INET) {
-        return (((struct sockaddr_in*) sa)->sin_port);
+        return ntohs(((struct sockaddr_in*) sa)->sin_port);
     }
 
-    return (((struct sockaddr_in6*) sa)->sin6_port);
+    return ntohs((((struct sockaddr_in6*) sa)->sin6_port));
+}
+
+void set_in_port(struct sockaddr* sa, in_port_t port) {
+    if (sa->sa_family == AF_INET) {
+        ((struct sockaddr_in*) sa)->sin_port = htons(port);
+    }
+
+    ((struct sockaddr_in6*) sa)->sin6_port = htons(port);
 }
 
 void fill_hints(struct addrinfo* hints) {
@@ -110,8 +118,11 @@ void socket_callback(void* args) {
         printf("first message received from client\n");
         client->other_client_addr_len = client_addr_len; //TODO: not required
         client->other_client_addr = &client_addr; //TODO: not required
-        client->other_client_port = 0; //TODO: not required
+        //client->other_client_port = 0; //TODO: not required
 
+        set_in_port(&client_addr, client->other_client_port);
+
+        printf("new port: %d\n", get_in_port(&client_addr));
 
         Connect(client->socket_fd, &client_addr, client_addr_len);
         client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
@@ -251,12 +262,15 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+    printf("port to use:%d\n", port);
+
     int fd;
 
     if (argc < 3) {
         // Client started only with port
         printf("init own socket\n");
         fd = init_socket(port);
+        printf("done own socket:%d %d\n", fd, get_port_of_socket(fd));
         init_client(&client, NULL, 0, port, fd);
     } else {
         // Client started with port and ip
@@ -286,7 +300,7 @@ int main(int argc, char** argv) {
                         NI_NUMERICHOST);
             if (curr->ai_family == AF_INET6) {
                 result = curr;
-                printf("try connect to: %s %d\n", host_name_buffer, ntohs(get_in_port(curr->ai_addr)));
+                printf("try connect to: %s %d\n", host_name_buffer, get_in_port(curr->ai_addr));
             }
 
         } while ((curr = curr->ai_next) != NULL);
@@ -299,7 +313,7 @@ int main(int argc, char** argv) {
         printf("init own socket\n");
         fd = init_socket(0);
         Connect(fd, result->ai_addr, result->ai_addrlen);
-        printf("done own socket:%d %d\n", fd, htons(get_port_of_socket(fd)));
+        printf("done own socket:%d %d\n", fd, get_port_of_socket(fd));
         printf("init other client socket\n");
         init_client(&client, result->ai_addr, result->ai_addrlen, port, fd);
         freeaddrinfo(result);
