@@ -29,14 +29,6 @@ typedef struct {
 
 typedef struct {
     char* data;
-} connect_four_heartbeat_content_t;
-
-typedef struct {
-    char* data;
-} connect_four_heartbeat_ack_content_t;
-
-typedef struct {
-    char* data;
 } connect_four_error_content_t;
 
 typedef struct {
@@ -61,12 +53,12 @@ typedef struct {
 
 typedef struct {
     connect_four_header_t header;
-    connect_four_heartbeat_ack_content_t heartbeat_ack;
+    char* data;
 } connect_four_heartbeat_ack_message_t;
 
 typedef struct {
     connect_four_header_t header;
-    connect_four_heartbeat_content_t heartbeat;
+    char* data;
 } connect_four_heartbeat_message_t;
 
 typedef struct {

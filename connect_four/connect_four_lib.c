@@ -57,20 +57,23 @@ void client_send_set_column_ack(client_t* client, char buf[], uint32_t seq) {
 }
 
 void client_send_heartbeat(client_t* client, char buf[]) {
-    connect_four_heartbeat_message_t message;
-    message.header.type = CONNECT_FOUR_HEADER_TYPE_HEARTBEAT;
-    message.header.length = sizeof(client->heartbeat_count);
-    //memcpy(message.heartbeat.data, &client->heartbeat_count, sizeof(client->heartbeat_count));
-    ssize_t size = sizeof(connect_four_header_t) + sizeof(client->heartbeat_count);
-    memcpy(buf, &message, size);
+    printf("client_send_heartbeat\n");
+    connect_four_heartbeat_message_t* message = malloc(sizeof(connect_four_header_t) + sizeof(int64_t));
+    message->header.type = CONNECT_FOUR_HEADER_TYPE_HEARTBEAT;
+    message->header.length = sizeof(int64_t);
+    message->data = "123\0";
+    ssize_t size = sizeof(connect_four_header_t) + sizeof(int64_t);
+    memcpy(buf, message, size);
     client_send_message(client, buf, size);
+    printf("send hb: header content:%s\n", message->data);
+    printf("send hb: size::%lld\n", size);
 }
 
 void client_send_heartbeat_ack(client_t* client, char buf[], ssize_t len) {
     connect_four_heartbeat_ack_message_t message;
-    message.header.type = CONNECT_FOUR_HEADER_TYPE_HEARTBEAT;
+    message.header.type = CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK;
     message.header.length = len;
-    memcpy(&message.heartbeat_ack, buf, len);
+    memcpy(&message.data, buf, len);
     ssize_t size = sizeof(connect_four_header_t) + len;
     memcpy(buf, &message, size);
     client_send_message(client, buf, size);
