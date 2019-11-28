@@ -27,12 +27,16 @@ ssize_t client_send_message(client_t* client, char* buf, ssize_t len) {
 }
 
 bool client_valid_ack(client_t* client, int seq) {
-    if (client->seq + 1 == seq) return true;
+    if (client->seq/* + 1*/ == seq) return true;
     return false;
 }
 
 int client_get_player_id(client_t* client) {
     return client->first ? PLAYER_1 : PLAYER_2;
+}
+
+int client_get_other_player_id(client_t* client) {
+    return client->first ? PLAYER_2 : PLAYER_1;
 }
 
 void client_send_set_column(client_t* client, char buf[], uint16_t column) {
@@ -57,7 +61,6 @@ void client_send_set_column_ack(client_t* client, char buf[], uint32_t seq) {
 }
 
 void client_send_heartbeat(client_t* client, char buf[]) {
-    printf("client_send_heartbeat\n");
     connect_four_heartbeat_message_t* message = malloc(sizeof(connect_four_header_t) + 64);
     message->header.type = CONNECT_FOUR_HEADER_TYPE_HEARTBEAT;
     message->header.length = 64;

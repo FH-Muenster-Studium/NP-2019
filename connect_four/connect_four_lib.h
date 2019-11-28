@@ -109,4 +109,6 @@ void client_send_set_column_ack(client_t* client, char buf[], uint32_t seq);
 
 void client_send_error(client_t* client, char buf[], char* cause);
 
+int client_get_other_player_id(client_t* client);
+
 #endif //CONNECT_FOUR_CLIENT_CONNECT_FOUR_LIB_H
