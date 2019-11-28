@@ -19,7 +19,7 @@ void init_client(client_t* client, client_addr_t other_client_addr, client_addr_
     client->socket_fd = other_client_fd;
     client->heartbeat_count = 0;
     client->last_heartbeat_received = 0;
-    client->seq = 0;
+    client->seq = 1;
     client->other_client_port = port;
 }
 
