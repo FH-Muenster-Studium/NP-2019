@@ -42,28 +42,35 @@ typedef struct {
 } connect_four_set_column_ack_content_t;
 
 typedef struct {
-    connect_four_header_t header;
-    connect_four_set_column_content_t set_column;
+    uint16_t type;
+    uint16_t length;
+    uint32_t seq;
+    uint16_t column;
+    char padding[2];
 } connect_four_set_column_message_t;
 
 typedef struct {
-    connect_four_header_t header;
-    connect_four_set_column_ack_content_t set_column_ack;
+    uint16_t type;
+    uint16_t length;
+    uint32_t seq;
 } connect_four_set_column_ack_message_t;
 
 typedef struct {
-    connect_four_header_t header;
+    uint16_t type;
+    uint16_t length;
     char* data;
 } connect_four_heartbeat_ack_message_t;
 
 typedef struct {
-    connect_four_header_t header;
+    uint16_t type;
+    uint16_t length;
     char* data;
 } connect_four_heartbeat_message_t;
 
 typedef struct {
-    connect_four_header_t header;
-    connect_four_error_content_t error;
+    uint16_t type;
+    uint16_t length;
+    char* data;
 } connect_four_error_message_t;
 
 // Client states

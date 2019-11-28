@@ -137,22 +137,21 @@ void socket_callback(void* args) {
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN:
             if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN) {
                 if (header_length < sizeof(connect_four_set_column_content_t)) return;
-                connect_four_set_column_message_t* set_column_message = (connect_four_set_column_message_t*) buf;
-                connect_four_set_column_content_t set_column = set_column_message->set_column;
+                connect_four_set_column_message_t* set_column = (connect_four_set_column_message_t*) buf;
 
-                if (!valid_move(set_column.column)) {
+                if (!valid_move(set_column->column)) {
                     client_send_error(client, buf, "Cause 1: Invalid column");
                 }
 
                 printf("ack c %d\n", client->seq);
-                printf("ack msg %d\n", set_column.seq);
+                printf("ack msg %d\n", set_column->seq);
 
-                if (!client_valid_ack(client, set_column.seq)) return;
-                client->seq = set_column.seq + 1;
+                if (!client_valid_ack(client, set_column->seq)) return;
+                client->seq = set_column->seq + 1;
 
-                client_send_set_column_ack(client, buf, set_column.seq);
+                client_send_set_column_ack(client, buf, set_column->seq);
 
-                make_move(set_column.column, client_get_other_player_id(client));
+                make_move(set_column->column, client_get_other_player_id(client));
 
                 print_board();
 
@@ -165,8 +164,8 @@ void socket_callback(void* args) {
             if (client->state != CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK) return;
             if (header_length != sizeof(connect_four_set_column_ack_content_t)) return;
             connect_four_set_column_ack_message_t* set_column_ack = (connect_four_set_column_ack_message_t*) buf;
-            if (set_column_ack->set_column_ack.seq != client->seq) return;
-            client->seq = set_column_ack->set_column_ack.seq + 1;
+            if (set_column_ack->seq != client->seq) return;
+            client->seq = set_column_ack->seq + 1;
             client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
             break;
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT: {

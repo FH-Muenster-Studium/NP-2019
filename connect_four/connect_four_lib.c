@@ -41,11 +41,11 @@ int client_get_other_player_id(client_t* client) {
 
 void client_send_set_column(client_t* client, char buf[], uint16_t column) {
     connect_four_set_column_message_t message;
-    message.header.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN);
-    message.header.length = htons(sizeof(connect_four_set_column_content_t));
-    message.set_column.column = column;
-    message.set_column.seq = client->seq;
-    memset(message.set_column.padding, 0, 2);
+    message.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN);
+    message.length = htons(sizeof(connect_four_set_column_content_t));
+    message.column = column;
+    message.seq = client->seq;
+    memset(message.padding, 0, 2);
     int size = sizeof(message);
     memcpy(buf, &message, size);
     client_send_message(client, buf, size);
@@ -53,9 +53,9 @@ void client_send_set_column(client_t* client, char buf[], uint16_t column) {
 
 void client_send_set_column_ack(client_t* client, char buf[], uint32_t seq) {
     connect_four_set_column_ack_message_t set_column_ack;
-    set_column_ack.header.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN_ACK);
-    set_column_ack.header.length = htons(sizeof(connect_four_set_column_ack_content_t));
-    set_column_ack.set_column_ack.seq = seq;
+    set_column_ack.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN_ACK);
+    set_column_ack.length = htons(sizeof(connect_four_set_column_ack_content_t));
+    set_column_ack.seq = seq;
     int size = sizeof(set_column_ack);
     memcpy(buf, &set_column_ack, size);
     client_send_message(client, buf, size);
@@ -63,14 +63,16 @@ void client_send_set_column_ack(client_t* client, char buf[], uint32_t seq) {
 
 void client_send_heartbeat(client_t* client, char buf[]) {
     connect_four_heartbeat_message_t* message = malloc(sizeof(connect_four_header_t) + 64);
-    message->header.type = htons(CONNECT_FOUR_HEADER_TYPE_HEARTBEAT);
-    message->header.length = htons(64);
+    message->type = htons(CONNECT_FOUR_HEADER_TYPE_HEARTBEAT);
+    message->length = htons(64);
     char* buffer = malloc(64);
     message->data = malloc(64);
     snprintf(buffer, 64, "%lld", client->heartbeat_count);
     memcpy(message->data, buffer, 64);
     ssize_t size = sizeof(connect_four_header_t) + 64;
     memcpy(buf, message, size);
+
+    //memcpy(buf, )
 
     /*(*buf) = htons(CONNECT_FOUR_HEADER_TYPE_HEARTBEAT);
     (*(buf + (sizeof(uint16_t)))) = htons(64);
@@ -84,8 +86,8 @@ void client_send_heartbeat(client_t* client, char buf[]) {
 
 void client_send_heartbeat_ack(client_t* client, char buf[], char data[], ssize_t len) {
     connect_four_heartbeat_ack_message_t* message = malloc(sizeof(connect_four_header_t) + len);
-    message->header.type = htons(CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK);
-    message->header.length = htons(len);
+    message->type = htons(CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK);
+    message->length = htons(len);
     message->data = data;
     ssize_t size = sizeof(connect_four_header_t) + len;
     memcpy(buf, message, size);
@@ -96,9 +98,9 @@ void client_send_heartbeat_ack(client_t* client, char buf[], char data[], ssize_
 void client_send_error(client_t* client, char buf[], char* cause) {
     ssize_t string_length = strlen(cause) + 1;
     connect_four_error_message_t message;
-    message.header.type = htons(CONNECT_FOUR_HEADER_TYPE_ERROR);
-    message.header.length = htons(string_length);
-    memcpy(message.error.data, &cause, sizeof(cause));
+    message.type = htons(CONNECT_FOUR_HEADER_TYPE_ERROR);
+    message.length = htons(string_length);
+    memcpy(message.data, &cause, sizeof(cause));
     ssize_t size = sizeof(connect_four_header_t) + string_length;
     memcpy(buf, &message, size);
     client_send_message(client, buf, size);
