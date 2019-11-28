@@ -91,7 +91,7 @@ typedef struct client {
     bool first;
     client_addr_t other_client_addr;
     client_addr_len_t other_client_addr_len;
-    int other_client_fd;
+    int socket_fd;
     int32_t other_client_port;
     uint32_t seq;
     uint16_t last_column;

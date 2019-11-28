@@ -38,20 +38,20 @@ int init_socket(int port) {
     return fd;
 }
 
-int init_socket_other_client(struct sockaddr* other_client_addr, socklen_t other_client_addr_len) {
-    int fd = Socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-    int* option = 0;
-    setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &option, sizeof(int));
-    Connect(fd, other_client_addr, other_client_addr_len);
-    return fd;
-}
-
 int get_port_of_socket(int fd) {
     struct sockaddr_in my_addr;
     bzero(&my_addr, sizeof(my_addr));
     int len = sizeof(my_addr);
     getsockname(fd, (struct sockaddr *) &my_addr, &len);
     return ntohs(my_addr.sin_port);
+}
+
+in_port_t get_in_port(struct sockaddr* sa) {
+    if (sa->sa_family == AF_INET) {
+        return (((struct sockaddr_in*) sa)->sin_port);
+    }
+
+    return (((struct sockaddr_in6*) sa)->sin6_port);
 }
 
 void fill_hints(struct addrinfo* hints) {
@@ -75,18 +75,45 @@ void socket_callback(void* args) {
     client_addr_len = (socklen_t) sizeof(client_addr);
     memset((void*) &client_addr, 0, sizeof(client_addr));
     ssize_t len = Recvfrom(fd, (void*) (buf), sizeof(buf), 0, &client_addr, &client_addr_len);
+    if (len < 0) return;
     printf("header of size:%ld\n", len);
     if (len < sizeof(connect_four_header_t)) {
         printf("len: %ld smaller then header\n", sizeof(connect_four_header_t));
     }
     connect_four_header_t* header = (connect_four_header_t*) buf;
     printf("header type:%d\n", header->type);
+
+    char *s = NULL;
+    switch(client_addr.sa_family) {
+        case AF_INET: {
+            struct sockaddr_in* addr_in = (struct sockaddr_in*)&client_addr;
+            s = malloc(INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
+            break;
+        }
+        case AF_INET6: {
+            struct sockaddr_in6* addr_in6 = (struct sockaddr_in6*)&client_addr;
+            s = malloc(INET6_ADDRSTRLEN);
+            inet_ntop(AF_INET6, &(addr_in6->sin6_addr), s, INET6_ADDRSTRLEN);
+            break;
+        }
+        default:
+            printf("unknown address family\n");
+            break;
+    }
+    printf("IP address: %s\n", s);
+    printf("port: %d\n", get_in_port(&client_addr));
+    printf("client_addr_len: %d\n", client_addr_len);
+    free(s);
+
     if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
         printf("first message received from client\n");
         client->other_client_addr_len = client_addr_len; //TODO: not required
         client->other_client_addr = &client_addr; //TODO: not required
         client->other_client_port = 0; //TODO: not required
-        client->other_client_fd = init_socket_other_client(&client_addr, client_addr_len);
+
+
+        Connect(client->socket_fd, &client_addr, client_addr_len);
         client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
         printf("now waiting for turn\n");
     }
@@ -149,14 +176,6 @@ void socket_callback(void* args) {
     }
 }
 
-in_port_t get_in_port(struct sockaddr* sa) {
-    if (sa->sa_family == AF_INET) {
-        return (((struct sockaddr_in*) sa)->sin_port);
-    }
-
-    return (((struct sockaddr_in6*) sa)->sin6_port);
-}
-
 int entered_column_to_data_column(int column) {
     return column - 1;
 }
@@ -205,7 +224,9 @@ void send_heartbeat_timer_callback(void* args) {
     char* buf = socket_callback_args->buf;
     client_t* client = socket_callback_args->client;
 
-    client_send_heartbeat(client, buf);
+    if (client->state != CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
+        client_send_heartbeat(client, buf);
+    }
 
     start_timer(socket_callback_args->heartbeat_timer, 1000);
 }
@@ -231,14 +252,12 @@ int main(int argc, char** argv) {
     }
 
     int fd;
-    int other_client_fd;
 
     if (argc < 3) {
         // Client started only with port
         printf("init own socket\n");
         fd = init_socket(port);
-        other_client_fd = 0;
-        init_client(&client, NULL, 0, port, other_client_fd);
+        init_client(&client, NULL, 0, port, fd);
     } else {
         // Client started with port and ip
         struct addrinfo hints;
@@ -279,11 +298,10 @@ int main(int argc, char** argv) {
 
         printf("init own socket\n");
         fd = init_socket(0);
-        printf("done own socket:%d %d\n", fd, get_port_of_socket(fd));
+        Connect(fd, result->ai_addr, result->ai_addrlen);
+        printf("done own socket:%d %d\n", fd, htons(get_port_of_socket(fd)));
         printf("init other client socket\n");
-        other_client_fd = init_socket_other_client(result->ai_addr, result->ai_addrlen);
-        printf("done init other client socket:%d\n", other_client_fd);
-        init_client(&client, result->ai_addr, result->ai_addrlen, port, other_client_fd);
+        init_client(&client, result->ai_addr, result->ai_addrlen, port, fd);
         freeaddrinfo(result);
     }
 
