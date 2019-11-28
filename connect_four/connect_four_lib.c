@@ -45,6 +45,7 @@ void client_send_set_column(client_t* client, char buf[], uint16_t column) {
     message.header.length = htons(sizeof(connect_four_set_column_content_t));
     message.set_column.column = column;
     message.set_column.seq = client->seq;
+    memset(message.set_column.padding, 0, 2);
     int size = sizeof(message);
     memcpy(buf, &message, size);
     client_send_message(client, buf, size);
