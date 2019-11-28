@@ -178,7 +178,7 @@ void socket_callback(void* args) {
             connect_four_heartbeat_message_t* heartbeat_message = (connect_four_heartbeat_message_t*) socket_callback_args->buf;
             if (header->length != (len - sizeof(connect_four_header_t))) return;
             printf("hb len h:%d\n", atoi(heartbeat_message->data));
-            //client_send_heartbeat_ack(client, socket_callback_args->buf, heartbeat_message->data, header->length);
+            client_send_heartbeat_ack(client, socket_callback_args->buf, heartbeat_message->data, header->length);
             break;
         }
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK: {
