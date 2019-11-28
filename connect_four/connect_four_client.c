@@ -113,7 +113,7 @@ void socket_callback(void* args) {
     memset(buf, 0, sizeof(buf));
     ssize_t len = Recvfrom(fd, buf, sizeof(buf), 0, &client_addr, &client_addr_len);
     if (len < 0) return;
-    printf("recv len:%ld\n", len);
+    //printf("recv len:%ld\n", len);
     if (len < sizeof(connect_four_header_t)) {
         printf("len: %ld smaller then header\n", sizeof(connect_four_header_t));
     }
@@ -121,11 +121,11 @@ void socket_callback(void* args) {
     read_header(buf, &header2);
     connect_four_header_t* header = &header2;//(connect_four_header_t*) buf;
 
-    int header_type = ntohs(header->type);
-    int header_length = ntohs(header->length);
+    int header_type = /*ntohs(*/header->type/*)*/;
+    int header_length = /*ntohs(*/header->length/*)*/;
 
-    printf("header type:%d\n", header_type);
-    printf("header length:%d\n", header_length);
+    //printf("header type:%d\n", header_type);
+    //printf("header length:%d\n", header_length);
 
     if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
         client->other_client_addr_len = client_addr_len; //TODO: not required
@@ -167,7 +167,9 @@ void socket_callback(void* args) {
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN_ACK:
             if (client->state != CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK) return;
             if (header_length != sizeof(connect_four_set_column_ack_content_t)) return;
-            connect_four_set_column_ack_message_t* set_column_ack = (connect_four_set_column_ack_message_t*) buf;
+            connect_four_set_column_ack_message_t set_column_ack2;
+            read_set_column_ack(buf, &set_column_ack2);
+            connect_four_set_column_ack_message_t* set_column_ack = &set_column_ack2;//(connect_four_set_column_ack_message_t*) buf;
             if (set_column_ack->seq != client->seq) return;
             client->seq = set_column_ack->seq + 1;
             client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;

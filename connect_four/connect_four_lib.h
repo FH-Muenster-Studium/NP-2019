@@ -122,4 +122,6 @@ void read_header(char buf[], connect_four_header_t *header);
 
 void read_set_column(char buf[], connect_four_set_column_message_t* message);
 
+void read_set_column_ack(char buf[], connect_four_set_column_ack_message_t* message);
+
 #endif //CONNECT_FOUR_CLIENT_CONNECT_FOUR_LIB_H

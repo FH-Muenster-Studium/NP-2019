@@ -86,23 +86,29 @@ uint16_t charToU16bitNum(char a[]) {
 }
 
 void read_header(char buf[], connect_four_header_t *header) {
-    header->type = charToU16bitNum(buf);
-    header->length = charToU16bitNum(buf + sizeof(uint16_t));
+    header->type = ntohs(charToU16bitNum(buf));
+    header->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
 }
 
 void read_set_column(char buf[], connect_four_set_column_message_t* message) {
-    message->type = charToU16bitNum(buf);
-    message->length = charToU16bitNum(buf + sizeof(uint16_t));
-    message->seq = charToU32bitNum(buf + sizeof(uint16_t) +  + sizeof(uint16_t));
-    message->column = charToU32bitNum(buf +  + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t));
+    message->type = ntohs(charToU16bitNum(buf));
+    message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
+    message->seq = ntohl(charToU32bitNum(buf + sizeof(uint16_t) +  + sizeof(uint16_t)));
+    message->column = ntohs(charToU16bitNum(buf +  + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t)));
+}
+
+void read_set_column_ack(char buf[], connect_four_set_column_ack_message_t* message) {
+    message->type = ntohs(charToU16bitNum(buf));
+    message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
+    message->seq = ntohl(charToU32bitNum(buf + sizeof(uint16_t) +  + sizeof(uint16_t)));
 }
 
 void client_send_set_column(client_t* client, char buf[], uint16_t column) {
     connect_four_set_column_message_t message;
     message.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN);
     message.length = htons(sizeof(connect_four_set_column_content_t));
-    message.column = column;
-    message.seq = client->seq;
+    message.column = htons(column);
+    message.seq = htonl(client->seq);
     memset(message.padding, 0, 2);
     int size = sizeof(message);
 
@@ -120,7 +126,7 @@ void client_send_set_column_ack(client_t* client, char buf[], uint32_t seq) {
     connect_four_set_column_ack_message_t set_column_ack;
     set_column_ack.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN_ACK);
     set_column_ack.length = htons(sizeof(connect_four_set_column_ack_content_t));
-    set_column_ack.seq = seq;
+    set_column_ack.seq = htonl(seq);
     int size = sizeof(set_column_ack);
     memcpy(buf, &set_column_ack, size);
     client_send_message(client, buf, size);
