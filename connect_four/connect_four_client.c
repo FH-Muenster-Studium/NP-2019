@@ -117,13 +117,15 @@ void socket_callback(void* args) {
     if (len < sizeof(connect_four_header_t)) {
         printf("len: %ld smaller then header\n", sizeof(connect_four_header_t));
     }
-    connect_four_header_t* header = (connect_four_header_t*) buf;
+    connect_four_header_t header2;
+    read_header(buf, &header2);
+    connect_four_header_t* header = &header2;//(connect_four_header_t*) buf;
 
     int header_type = ntohs(header->type);
     int header_length = ntohs(header->length);
 
-    //printf("header type:%d\n", header_type);
-    //printf("header length:%d\n", header_length);
+    printf("header type:%d\n", header_type);
+    printf("header length:%d\n", header_length);
 
     if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
         client->other_client_addr_len = client_addr_len; //TODO: not required
@@ -137,7 +139,9 @@ void socket_callback(void* args) {
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN:
             if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN) {
                 if (header_length < sizeof(connect_four_set_column_content_t)) return;
-                connect_four_set_column_message_t* set_column = (connect_four_set_column_message_t*) buf;
+                connect_four_set_column_message_t set_column2;
+                read_set_column(buf, &set_column2);
+                connect_four_set_column_message_t* set_column = &set_column2;//(connect_four_set_column_message_t*) buf;
 
                 if (!valid_move(set_column->column)) {
                     client_send_error(client, buf, "Cause 1: Invalid column");

@@ -1,6 +1,7 @@
 #include "connect_four_lib.h"
 
-void init_client(client_t* client, client_addr_t other_client_addr, client_addr_len_t other_client_addr_len, int port, int other_client_fd) {
+void init_client(client_t* client, client_addr_t other_client_addr, client_addr_len_t other_client_addr_len, int port,
+                 int other_client_fd) {
     if (other_client_addr == NULL) {
         client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN;
         client->first = false;
@@ -39,6 +40,63 @@ int client_get_other_player_id(client_t* client) {
     return client->first ? PLAYER_2 : PLAYER_1;
 }
 
+/*
+ int64_t charTo64bitNum(char a[]) {
+  int64_t n = 0;
+  n = (((int64_t)a[0] << 56) & 0xFF00000000000000U)
+    | (((int64_t)a[1] << 48) & 0x00FF000000000000U)
+    | (((int64_t)a[2] << 40) & 0x0000FF0000000000U)
+    | (((int64_t)a[3] << 32) & 0x000000FF00000000U)
+    | ((a[4] << 24) & 0x00000000FF000000U)
+    | ((a[5] << 16) & 0x0000000000FF0000U)
+    | ((a[6] <<  8) & 0x000000000000FF00U)
+    | (a[7]        & 0x00000000000000FFU);
+  return n;
+}
+ */
+
+void int16ToChar(char a[], uint16_t n) {
+    memcpy(a, &n, 2);
+}
+
+void int32ToChar(char a[], int32_t n) {
+    memcpy(a, &n, 4);
+}
+
+void int64ToChar(char a[], int64_t n) {
+    memcpy(a, &n, 8);
+}
+
+int64_t charTo64bitNum(char a[]) {
+    int64_t n = 0;
+    memcpy(&n, a, 8);
+    return n;
+}
+
+uint32_t charToU32bitNum(char a[]) {
+    uint32_t n = 0;
+    memcpy(&n, a, 4);
+    return n;
+}
+
+uint16_t charToU16bitNum(char a[]) {
+    uint32_t n = 0;
+    memcpy(&n, a, 4);
+    return n;
+}
+
+void read_header(char buf[], connect_four_header_t *header) {
+    header->type = charToU16bitNum(buf);
+    header->length = charToU16bitNum(buf + sizeof(uint16_t));
+}
+
+void read_set_column(char buf[], connect_four_set_column_message_t* message) {
+    message->type = charToU16bitNum(buf);
+    message->length = charToU16bitNum(buf + sizeof(uint16_t));
+    message->seq = charToU32bitNum(buf + sizeof(uint16_t) +  + sizeof(uint16_t));
+    message->column = charToU32bitNum(buf +  + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t));
+}
+
 void client_send_set_column(client_t* client, char buf[], uint16_t column) {
     connect_four_set_column_message_t message;
     message.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN);
@@ -48,16 +106,10 @@ void client_send_set_column(client_t* client, char buf[], uint16_t column) {
     memset(message.padding, 0, 2);
     int size = sizeof(message);
 
-    buf[0] = message.type & 0xff;
-    buf[1] = (message.type>>8)  & 0xff;
-    buf[2] = message.length & 0xff;
-    buf[3] = (message.length>>8)  & 0xff;
-    buf[4] = message.column & 0xff;
-    buf[5] = (message.column>>8)  & 0xff;
-    buf[6] = message.seq & 0xff;
-    buf[7] = (message.seq>>8)  & 0xff;
-    buf[8] = (message.seq>>16)  & 0xff;
-    buf[9] = (message.seq>>24)  & 0xff;
+    int16ToChar(buf, message.type);
+    int16ToChar(buf + sizeof(uint16_t), message.length);
+    int32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t), message.seq);
+    int16ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t), message.column);
     buf[10] = 0;
     buf[11] = 0;
     //memcpy(buf, &message, size);
