@@ -177,21 +177,19 @@ void socket_callback(void* args) {
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT: {
             connect_four_heartbeat_message_t* heartbeat_message = (connect_four_heartbeat_message_t*) socket_callback_args->buf;
             if (header->length != (len - sizeof(connect_four_header_t))) return;
-            printf("hb len h:%d\n", atoi(heartbeat_message->data));
             client_send_heartbeat_ack(client, socket_callback_args->buf, heartbeat_message->data, header->length);
             break;
         }
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK: {
             connect_four_heartbeat_ack_message_t* heartbeat_ack_message = (connect_four_heartbeat_ack_message_t*) socket_callback_args->buf;
             if (header->length != (len - sizeof(connect_four_header_t))) return;
-            printf("data: %s\n", heartbeat_ack_message->data);
-            ++client->heartbeat_count;
-            /*if (client->heartbeat_count == (int64_t) heartbeat_ack_message->data) {
+            printf("cc %d hb %d \n", client->heartbeat_count, atoi(heartbeat_ack_message->data));
+            if (client->heartbeat_count == atoi(heartbeat_ack_message->data)) {
                 time_t msec = time(NULL) * 1000;
                 client->last_heartbeat_received = msec;
                 ++client->heartbeat_count;
                 printf("heartbeat ack count:%lld\n", client->heartbeat_count);
-            }*/
+            }
             break;
         }
     }

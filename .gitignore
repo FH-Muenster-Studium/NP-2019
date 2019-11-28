@@ -34,3 +34,4 @@ connect_four/config.status
 connect_four/config.sub
 connect_four/aclocal.m4
 connect_four/connect_four_server
+connect_four/connect_four_client
