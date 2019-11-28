@@ -80,15 +80,18 @@ void socket_callback(void* args) {
         printf("len: %ld smaller then header\n", sizeof(connect_four_header_t));
     }
     connect_four_header_t* header = (connect_four_header_t*) buf;
+    printf("header type:%d\n", header->type);
+    if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
+        printf("first message received from client\n");
+        client->other_client_addr_len = client_addr_len; //TODO: not required
+        client->other_client_addr = &client_addr; //TODO: not required
+        client->other_client_port = 0; //TODO: not required
+        client->other_client_fd = init_socket_other_client(&client_addr, client_addr_len);
+        client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
+        printf("now waiting for turn\n");
+    }
     switch (header->type) {
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN:
-            if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
-                client->other_client_addr_len = client_addr_len; //TODO: not required
-                client->other_client_addr = &client_addr; //TODO: not required
-                client->other_client_port = 0; //TODO: not required
-                client->other_client_fd = init_socket_other_client(&client_addr, client_addr_len);
-                client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
-            }
             if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN) {
                 if (header->length < sizeof(connect_four_set_column_content_t)) return;
                 connect_four_set_column_message_t* set_column_message = (connect_four_set_column_message_t*) buf;
@@ -104,6 +107,8 @@ void socket_callback(void* args) {
                 client_send_set_column_ack(client, buf, set_column.seq);
 
                 make_move(set_column.column, client_get_player_id(client));
+
+                print_board();
 
                 int winnerPlayerId = winner();
                 if (winnerPlayerId != 0) {
