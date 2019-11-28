@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include "Socket.h"
 #include "4clib.h"
+#include <string.h>
 
 // Network protocol (messages)
 
@@ -21,53 +22,57 @@
 #define CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK 9
 #define CONNECT_FOUR_HEADER_TYPE_ERROR 10
 
-typedef struct connect_four_header {
+typedef struct {
     uint16_t type;
     uint16_t length;
 } connect_four_header_t;
 
-typedef struct connect_four_heartbeat {
-    uint32_t count;
-} connect_four_heartbeat_t;
+typedef struct {
+    char* data;
+} connect_four_heartbeat_content_t;
 
-typedef struct connect_four_heartbeat_ack {
-    uint32_t count;
-} connect_four_heartbeat_ack_t;
+typedef struct {
+    char* data;
+} connect_four_heartbeat_ack_content_t;
 
-typedef struct connect_four_error {
-    uint32_t cause;
-} connect_four_error_t;
+typedef struct {
+    char* data;
+} connect_four_error_content_t;
 
-typedef struct connect_four_set_column {
+typedef struct {
     uint32_t seq;
     uint16_t column;
     char padding[2];
-} connect_four_set_column_t;
+} connect_four_set_column_content_t;
 
-typedef struct connect_four_set_column_ack {
+typedef struct {
     uint32_t seq;
-} connect_four_set_column_ack_t;
+} connect_four_set_column_ack_content_t;
 
-typedef struct connect_four_set_column_header {
+typedef struct {
     connect_four_header_t header;
-    connect_four_set_column_t set_column;
-} connect_four_set_column_header_t;
+    connect_four_set_column_content_t set_column;
+} connect_four_set_column_message_t;
 
-typedef struct connect_four_set_column_ack_header {
+typedef struct {
     connect_four_header_t header;
-    connect_four_set_column_ack_t set_column_ack;
-} connect_four_set_column_ack_header_t;
+    connect_four_set_column_ack_content_t set_column_ack;
+} connect_four_set_column_ack_message_t;
 
-typedef struct connect_four_message {
+typedef struct {
     connect_four_header_t header;
-    union {
-        connect_four_heartbeat_t heartbeat;
-        connect_four_heartbeat_ack_t heartbeat_ack;
-        connect_four_set_column_t set_column;
-        connect_four_set_column_ack_t set_column_ack;
-        connect_four_error_t error;
-    };
-} connect_four_message_t;
+    connect_four_heartbeat_ack_content_t heartbeat_ack;
+} connect_four_heartbeat_ack_message_t;
+
+typedef struct {
+    connect_four_header_t header;
+    connect_four_heartbeat_content_t heartbeat;
+} connect_four_heartbeat_message_t;
+
+typedef struct {
+    connect_four_header_t header;
+    connect_four_error_content_t error;
+} connect_four_error_message_t;
 
 // Client states
 
@@ -89,6 +94,9 @@ typedef struct client {
     int other_client_fd;
     int32_t other_client_port;
     uint32_t seq;
+    uint16_t last_column;
+    int64_t heartbeat_count;
+    int64_t last_heartbeat_received;
 } client_t;
 
 void init_client(client_t* client, client_addr_t other_client_addr, client_addr_len_t other_client_addr_len, int port, int other_client_fd);
@@ -98,5 +106,15 @@ ssize_t client_send_message(client_t* client, char* buf, ssize_t len);
 bool client_valid_ack(client_t* client, int seq);
 
 int client_get_player_id(client_t* client);
+
+void client_send_set_column(client_t* client, char buf[], uint16_t column);
+
+void client_send_heartbeat_ack(client_t* client, char buf[], ssize_t len);
+
+void client_send_heartbeat(client_t* client, char buf[]);
+
+void client_send_set_column_ack(client_t* client, char buf[], uint32_t seq);
+
+void client_send_error(client_t* client, char buf[], char* cause);
 
 #endif //CONNECT_FOUR_CLIENT_CONNECT_FOUR_LIB_H
