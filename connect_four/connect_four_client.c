@@ -40,14 +40,14 @@ int init_socket(int port) {
 
     fd = Socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
-    memset((void *) &server_addr, 0, sizeof(server_addr));
+    memset((void*) &server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
 #ifdef HAVE_SIN_LEN
     server_addr.sin_len = sizeof(struct sockaddr_in);
 #endif
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(port);
-    Bind(fd, (const struct sockaddr *) &server_addr, sizeof(server_addr));
+    Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
     return fd;
 }
 
@@ -55,7 +55,7 @@ int get_port_of_socket(int fd) {
     struct sockaddr_in my_addr;
     bzero(&my_addr, sizeof(my_addr));
     int len = sizeof(my_addr);
-    getsockname(fd, (struct sockaddr *) &my_addr, &len);
+    getsockname(fd, (struct sockaddr*) &my_addr, &len);
     return ntohs(my_addr.sin_port);
 }
 
@@ -139,23 +139,22 @@ void socket_callback(void* args) {
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN:
             if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN) {
                 if (header_length < (sizeof(uint32_t) + sizeof(uint16_t))) return;
-                connect_four_set_column_message_t set_column2;
-                read_set_column(buf, &set_column2);
-                connect_four_set_column_message_t* set_column = &set_column2;//(connect_four_set_column_message_t*) buf;
+                connect_four_set_column_message_t set_column;
+                read_set_column(buf, &set_column);
 
-                if (!valid_move(set_column->column)) {
+                if (!valid_move(set_column.column)) {
                     client_send_error(client, buf, "Cause 1: Invalid column");
                 }
 
                 printf("ack c %d\n", client->seq);
-                printf("ack msg %d\n", set_column->seq);
+                printf("ack msg %d\n", set_column.seq);
 
-                if (!client_valid_ack(client, set_column->seq)) return;
-                client->seq = set_column->seq + 1;
+                if (!client_valid_ack(client, set_column.seq)) return;
+                client->seq = set_column.seq + 1;
 
-                client_send_set_column_ack(client, buf, set_column->seq);
+                client_send_set_column_ack(client, buf, set_column.seq);
 
-                make_move(set_column->column, client_get_other_player_id(client));
+                make_move(set_column.column, client_get_other_player_id(client));
 
                 print_board();
 
@@ -167,32 +166,29 @@ void socket_callback(void* args) {
         case CONNECT_FOUR_HEADER_TYPE_SET_COLUMN_ACK:
             if (client->state != CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK) return;
             if (header_length != sizeof(connect_four_set_column_ack_content_t)) return;
-            connect_four_set_column_ack_message_t set_column_ack2;
-            read_set_column_ack(buf, &set_column_ack2);
-            connect_four_set_column_ack_message_t* set_column_ack = &set_column_ack2;//(connect_four_set_column_ack_message_t*) buf;
-            if (set_column_ack->seq != client->seq) return;
-            client->seq = set_column_ack->seq + 1;
+            connect_four_set_column_ack_message_t set_column_ack;
+            read_set_column_ack(buf, &set_column_ack);
+            if (set_column_ack.seq != client->seq) return;
+            client->seq = set_column_ack.seq + 1;
             client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
             break;
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT: {
-            connect_four_heartbeat_message_t heartbeat_message2;
-            read_heartbeat(buf, header_length, &heartbeat_message2);
-            connect_four_heartbeat_message_t* heartbeat_message = &heartbeat_message2;//(connect_four_heartbeat_message_t*) buf;
+            connect_four_heartbeat_message_t heartbeat_message;
+            read_heartbeat(buf, header_length, &heartbeat_message);
             if (header_length == (len - sizeof(connect_four_header_t))) {
-                client_send_heartbeat_ack(client, buf, heartbeat_message->data, header_length);
+                client_send_heartbeat_ack(client, buf, heartbeat_message.data, header_length);
             }
-            free(heartbeat_message2.data);
+            free(heartbeat_message.data);
             break;
         }
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK: {
             connect_four_heartbeat_ack_message_t heartbeat_ack_message2;
             read_heartbeat_ack(buf, header_length, &heartbeat_ack_message2);
-            connect_four_heartbeat_ack_message_t* heartbeat_ack_message = &heartbeat_ack_message2;//(connect_four_heartbeat_ack_message_t*) buf;
-            if (header_length!= (len - sizeof(connect_four_header_t))) return;
-            if (client->heartbeat_count == atoi(heartbeat_ack_message->data)) {
+            if (header_length == (len - sizeof(connect_four_header_t)) &&
+                client->heartbeat_count == atoi(heartbeat_ack_message2.data)) {
                 time_t msec = time(NULL) * 1000;
                 client->last_heartbeat_received = msec;
-                ++client->heartbeat_count;
+                client->heartbeat_count = client->heartbeat_count + 1;
                 //printf("heartbeat ack count:%lld\n", client->heartbeat_count);
             }
             free(heartbeat_ack_message2.data);
@@ -253,6 +249,9 @@ void send_heartbeat_timer_callback(void* args) {
 
     if (client->state != CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
         client_send_heartbeat(client, buf);
+        if (time(NULL) * 1000 - client->last_heartbeat_received > 30000) {
+            printf("No signal in last 30 seconds.\n");
+        }
     }
 
     start_timer(socket_callback_args->heartbeat_timer, 1000);
