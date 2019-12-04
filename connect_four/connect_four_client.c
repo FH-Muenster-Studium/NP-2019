@@ -116,13 +116,13 @@ void socket_callback(void* args) {
     //printf("recv len:%ld\n", len);
     if (len < sizeof(connect_four_header_t)) {
         printf("len: %ld smaller then header\n", sizeof(connect_four_header_t));
+        return;
     }
     connect_four_header_t header2;
     read_header(buf, &header2);
-    connect_four_header_t* header = &header2;//(connect_four_header_t*) buf;
 
-    int header_type = /*ntohs(*/header->type/*)*/;
-    int header_length = /*ntohs(*/header->length/*)*/;
+    int header_type = header2.type;
+    int header_length = header2.length;
 
     //printf("header type:%d\n", header_type);
     //printf("header length:%d\n", header_length);
@@ -170,7 +170,12 @@ void socket_callback(void* args) {
             read_set_column_ack(buf, &set_column_ack);
             if (set_column_ack.seq != client->seq) return;
             client->seq = set_column_ack.seq + 1;
-            client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
+
+            make_move(client->last_column, client_get_player_id(client));
+            print_board();
+            if (check_win(client) == false) {
+                client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
+            }
             break;
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT: {
             connect_four_heartbeat_message_t heartbeat_message;
@@ -184,16 +189,20 @@ void socket_callback(void* args) {
         case CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK: {
             connect_four_heartbeat_ack_message_t heartbeat_ack_message2;
             read_heartbeat_ack(buf, header_length, &heartbeat_ack_message2);
+            printf("hb ack %s\n", heartbeat_ack_message2.data);
             if (header_length == (len - sizeof(connect_four_header_t)) &&
                 client->heartbeat_count == atoi(heartbeat_ack_message2.data)) {
                 time_t msec = time(NULL) * 1000;
                 client->last_heartbeat_received = msec;
                 client->heartbeat_count = client->heartbeat_count + 1;
-                //printf("heartbeat ack count:%lld\n", client->heartbeat_count);
+                printf("heartbeat ack count:%lld\n", client->heartbeat_count);
             }
             free(heartbeat_ack_message2.data);
             break;
         }
+        default:
+            printf("Unsupported header type: %d\n", header_type);
+            break;
     }
 }
 
@@ -221,13 +230,7 @@ void stdin_callback(void* args) {
     client->last_column = column;
     client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK;
 
-    make_move(column, client_get_player_id(client));
-
     client_send_set_column(client, buf, column);
-
-    print_board();
-
-    check_win(client);
 }
 
 void send_set_column_timer_callback(void* args) {

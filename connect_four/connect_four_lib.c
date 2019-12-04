@@ -16,7 +16,7 @@ void init_client(client_t* client, client_addr_t other_client_addr, client_addr_
         client->other_client_addr_len = other_client_addr_len;
         //client->seq = 1;
     }
-    
+
     time_t msec = time(NULL) * 1000;
     client->last_heartbeat_received = msec;
 
