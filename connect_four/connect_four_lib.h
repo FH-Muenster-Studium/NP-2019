@@ -163,7 +163,7 @@ typedef struct {
     int server_fd;
     struct Node* server_client_node;
     struct Node* server_client_registered_node;
-    //int registered_client_count;
+    int registered_client_count;
     //server_client_t* first_client_fd;
     //server_client_t* second_client_fd;
     int state;
@@ -228,5 +228,7 @@ ssize_t calc_padding_of_header_len(uint16_t len);
 void add_registered_client(server_t* server, server_client_t* client);
 
 void remove_registered_client(server_t* server, int fd);
+
+void get_registered_clients(server_t* server, server_client_t* server_clients[], int count);
 
 #endif //CONNECT_FOUR_CLIENT_CONNECT_FOUR_LIB_H

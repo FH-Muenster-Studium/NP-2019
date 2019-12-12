@@ -389,6 +389,14 @@ void remove_registered_client(server_t* server, int fd) {
     single_linked_list_delete(server->server_client_registered_node, fd, &data);
 }
 
+void get_registered_clients(server_t* server, server_client_t* server_clients[], int count) {
+    void* data[count];
+    single_linked_list_get_and_delete(server->server_client_registered_node, data, count);
+    for (int i = 0; i < count; i++) {
+        server_clients[i] = (server_client_t*) data[i];
+    }
+}
+
 void remove_client(server_t* server, int fd) {
     void* data;
     if (single_linked_list_delete(server->server_client_node, fd, &data) == true) {

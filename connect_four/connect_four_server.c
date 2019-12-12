@@ -123,6 +123,16 @@ bool handle_package(connect_four_header_t* header, server_t* server, server_clie
             server_client->password = password;
             server_client->state = SERVER_CLIENT_STATE_REGISTERED;
 
+            server->registered_client_count++;
+
+            if (server->registered_client_count == 2) {
+                server_client_t* registered_clients[2];
+                get_registered_clients(server, registered_clients, 2);
+                //TODO: send client infos
+                server->registered_client_count = 0;
+                //TODO: close connection in peer info ack
+            }
+
             /*if (server->first_client_fd == NULL) {
                 server->first_client_fd = server_client;
             } else if (server->second_client_fd == NULL) {
