@@ -176,6 +176,8 @@ void socket_callback(void* args) {
             client->last_column_received = msec;
             client->cl_time = 1000;
 
+            stop_timer(socket_callback_args->set_column_timer);
+
             make_move(client->last_column, client_get_player_id(client));
             print_board();
             if (check_win(client) == false) {
