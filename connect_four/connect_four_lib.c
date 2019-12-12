@@ -20,6 +20,7 @@ void init_client(client_t* client, client_addr_t other_client_addr, client_addr_
     time_t msec = time(NULL) * 1000;
     client->last_heartbeat_received = msec;
 
+    client->curr_offset = 0;
     client->server_fd = server_fd;
     client->other_client_fd = other_client_fd;
     client->heartbeat_count = 0;
@@ -34,6 +35,11 @@ ssize_t client_send_message(client_t* client, char* buf, ssize_t len) {
 ssize_t client_send_server_message(client_t* client, char* buf, ssize_t len) {
     printf("send server message:%d\n", client->server_fd);
     return Send(client->server_fd, buf, len, 0);
+}
+
+ssize_t server_send_client_message(server_client_t* server_client, char* buf, ssize_t len) {
+    printf("send server to client message:%d\n", server_client->client_fd);
+    return Send(server_client->client_fd, buf, len, 0);
 }
 
 bool client_valid_ack(client_t* client, int seq) {
@@ -134,14 +140,52 @@ void read_heartbeat_ack(char buf[], ssize_t len, connect_four_heartbeat_ack_mess
     memcpy(message->data, buf + sizeof(uint16_t) + sizeof(uint16_t), len);
 }
 
+void read_error(char buf[], connect_four_error_message_t* message, char** error) {
+    message->type = ntohs(charToU16bitNum(buf));
+    message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
+    char text_buffer[message->length];
+    memcpy(text_buffer, buf + sizeof(uint16_t) + sizeof(uint16_t), message->length);
+    *error = malloc(message->length);
+    memcpy(*error, text_buffer, message->length);
+}
+
 void server_read_header(char buf[], connect_four_header_t* message) {
     message->type = ntohs(charToU16bitNum(buf));
     message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
 }
 
-void server_read_register(char buf[], ssize_t len, connect_four_register_request* message) {
+void server_read_register(char buf[], connect_four_register_request_t* message, char** username, char** password) {
     message->type = ntohs(charToU16bitNum(buf));
     message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
+    message->ip_address = ntohl(charToU32bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t)));
+    message->port = ntohs(charToU16bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t)));
+    message->name_length = ntohs(
+            charToU16bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t)));
+    message->password_length = ntohs(charToU16bitNum(
+            buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t)));
+    char text_buffer[message->name_length + message->password_length];
+    memcpy(text_buffer,
+           buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) +
+           sizeof(uint16_t), message->length - sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) +
+                             sizeof(uint16_t));
+    *username = malloc(message->name_length);
+    *password = malloc(message->password_length);
+    memcpy(*username, text_buffer, message->name_length);
+    memcpy(*password, text_buffer + message->name_length, message->password_length);
+}
+
+void client_read_peer_info(char buf[], connect_four_peer_info* message, char** username) {
+    message->type = ntohs(charToU16bitNum(buf));
+    message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
+    message->ip_address = ntohl(charToU32bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t)));
+    message->port = ntohs(charToU16bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t)));
+    message->start = ntohs(
+            charToU16bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t)));
+    ssize_t name_length = message->length - sizeof(connect_four_peer_info) + sizeof(connect_four_header_t);
+    char text_buffer[name_length];
+    memcpy(text_buffer, buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t), name_length);
+    *username = malloc(name_length);
+    memcpy(*username, text_buffer, name_length);
 }
 
 void client_send_set_column(client_t* client, char buf[], uint16_t column) {
@@ -231,7 +275,7 @@ int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t por
     } else {
         padding_length = sizeof(uint32_t) - none_full_alignment_length;
     }*/
-    uint16_t struct_size = sizeof(connect_four_register_request) + name_length + password_length;
+    uint16_t struct_size = sizeof(connect_four_register_request_t) + name_length + password_length;
     ssize_t none_full_alignment_length = struct_size % sizeof(uint32_t);
     ssize_t padding_length;
     if (none_full_alignment_length == 0) {
@@ -240,7 +284,7 @@ int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t por
         padding_length = sizeof(uint32_t) - none_full_alignment_length;
     }
     ssize_t full_struct_size = struct_size + padding_length;
-    connect_four_register_request* register_request = malloc(full_struct_size);
+    connect_four_register_request_t* register_request = malloc(full_struct_size);
     register_request->type = htons(CONNECT_FOUR_HEADER_TYPE_REGISTRATION_REQUEST);
 
     register_request->length = htons(struct_size - sizeof(connect_four_header_t));
@@ -254,9 +298,12 @@ int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t por
     printf("struct name len: %d\n", name_length);
     printf("struct pwd len: %d\n", password_length);
     printf("struct padding len: %ld\n", padding_length);
-    printf("struct mem len: %ld\n", sizeof(connect_four_register_request));
+    printf("struct mem len: %ld\n", sizeof(connect_four_register_request_t));
     printf("struct header len: %d\n", ntohs(register_request->length));
     printf("struct len: %ld\n", full_struct_size);
+
+    printf("register username: %s\n", register_request->data);
+    printf("register password: %s\n", register_request->data + name_length);
 
     //uint16_t full_length = sum_length + padding_length;
 
@@ -270,6 +317,46 @@ int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t por
     memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + name_length, password, password_length);*/
 
     return client_send_server_message(client, (char*) register_request, full_struct_size);
+}
+
+int server_send_peer_info(server_client_t* server_client, char buf[], uint32_t ip, uint16_t port, uint16_t start,
+                          char* name) {
+    uint16_t name_length = strlen(name) + 1;
+    uint16_t struct_size = sizeof(connect_four_peer_info) + name_length;
+    ssize_t none_full_alignment_length = struct_size % sizeof(uint32_t);
+    ssize_t padding_length;
+    if (none_full_alignment_length == 0) {
+        padding_length = 0;
+    } else {
+        padding_length = sizeof(uint32_t) - none_full_alignment_length;
+    }
+    ssize_t full_struct_size = struct_size + padding_length;
+    connect_four_peer_info* peer_info = malloc(full_struct_size);
+    peer_info->type = htons(CONNECT_FOUR_HEADER_TYPE_PEER_INFO);
+
+    peer_info->length = htons(struct_size - sizeof(connect_four_header_t));
+    peer_info->ip_address = htonl(ip);
+    peer_info->port = htons(port);
+    peer_info->start = start;
+    memcpy(peer_info->data, name, name_length);
+
+    printf("struct name len: %d\n", name_length);
+    printf("struct padding len: %ld\n", padding_length);
+    printf("struct mem len: %ld\n", sizeof(connect_four_peer_info));
+    printf("struct len: %ld\n", full_struct_size);
+
+    //uint16_t full_length = sum_length + padding_length;
+
+    /*int16ToChar(buf, CONNECT_FOUR_HEADER_TYPE_REGISTRATION_REQUEST);
+    int16ToChar(buf + sizeof(uint16_t), htons(struct_size - sizeof(connect_four_header_t)));
+    uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t), ip);
+    int16ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t), port);
+    int16ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t), name_length);
+    int16ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t), password_length);
+    memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t), name, name_length);
+    memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + name_length, password, password_length);*/
+
+    return server_send_client_message(server_client, (char*) peer_info, full_struct_size);
 }
 
 void init_server(server_t* server) {
@@ -293,4 +380,10 @@ void remove_client(server_t* server, int fd) {
 server_client_t* get_client(server_t* server, int fd) {
     server_client_t* curr_server_client = single_linked_list_find(server->server_client_node, fd);
     return curr_server_client;
+}
+
+ssize_t calc_padding_of_header_len(uint16_t len) {
+    ssize_t diff = len % sizeof(uint32_t);
+    if (diff == 0) return 0;
+    return sizeof(uint32_t) - diff;
 }

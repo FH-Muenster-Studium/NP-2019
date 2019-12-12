@@ -61,6 +61,12 @@ typedef struct {
 typedef struct {
     uint16_t type;
     uint16_t length;
+    char data[];
+} connect_four_error_message_t;
+
+typedef struct {
+    uint16_t type;
+    uint16_t length;
     char* data;
 } connect_four_heartbeat_ack_message_t;
 
@@ -70,12 +76,6 @@ typedef struct {
     char* data;
 } connect_four_heartbeat_message_t;
 
-typedef struct {
-    uint16_t type;
-    uint16_t length;
-    char* data;
-} connect_four_error_message_t;
-
 typedef struct __attribute__((__packed__)) {
     uint16_t type;
     uint16_t length;
@@ -84,7 +84,7 @@ typedef struct __attribute__((__packed__)) {
     uint16_t name_length;
     uint16_t password_length;
     char data[]; // name - password - padding
-} connect_four_register_request;
+} connect_four_register_request_t;
 
 typedef struct __attribute__((__packed__)) {
     uint16_t type;
@@ -102,7 +102,7 @@ typedef struct __attribute__((__packed__)) {
     uint32_t ip_address;
     uint16_t port;
     uint16_t start;
-    void* data; // name - padding
+    char data[]; // name - padding
 } connect_four_peer_info;
 
 typedef struct __attribute__((__packed__)) {
@@ -134,12 +134,16 @@ typedef struct client {
     int64_t heartbeat_count;
     int64_t last_heartbeat_received;
     int server_fd;
+
+    ssize_t curr_offset;
+    char message_buffer[BUFFER_SIZE];
 } client_t;
 
 typedef struct {
     int client_fd;
     char message_buffer[BUFFER_SIZE];
     ssize_t curr_offset;
+    char send_buffer[BUFFER_SIZE];
 } server_client_t;
 
 typedef struct {
@@ -189,8 +193,16 @@ void read_heartbeat(char buf[], ssize_t len, connect_four_heartbeat_message_t* m
 
 void read_heartbeat_ack(char buf[], ssize_t len, connect_four_heartbeat_ack_message_t* message);
 
-void server_read_register(char buf[], ssize_t len, connect_four_register_request* message);
+void read_error(char buf[], connect_four_error_message_t* message, char** error);
+
+void server_read_register(char buf[], connect_four_register_request_t* message, char** username, char** password);
 
 void server_read_header(char buf[], connect_four_header_t* message);
+
+int server_send_peer_info(server_client_t* server_client, char buf[], uint32_t ip, uint16_t port, uint16_t start, char* name);
+
+void client_read_peer_info(char buf[], connect_four_peer_info* message, char** username);
+
+ssize_t calc_padding_of_header_len(uint16_t len);
 
 #endif //CONNECT_FOUR_CLIENT_CONNECT_FOUR_LIB_H

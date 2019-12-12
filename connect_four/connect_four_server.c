@@ -105,14 +105,20 @@ int get_address_for_search_for_tcp(char* ip, char* port) {
     return fd;
 }
 
-ssize_t calc_padding_of_header_len(uint16_t len) {
-    ssize_t diff = len % sizeof(uint32_t);
-    if (diff == 0) return 0;
-    return sizeof(uint32_t) - diff;
-}
-
-void handle_package(void* buf) {
-    //TODO:
+void handle_package(connect_four_header_t* header, server_client_t* server_client, void* buf) {
+    switch (header->type) {
+        case CONNECT_FOUR_HEADER_TYPE_REGISTRATION_REQUEST: {
+            connect_four_register_request_t register_request;
+            char* username;
+            char* password;
+            server_read_register(buf, &register_request, &username, &password);
+            printf("handle registration %d %d %s %s:\n", register_request.name_length, register_request.password_length, username, password);
+            server_send_peer_info(server_client, NULL, 0, 0, 0, "test3");
+            free(username);
+            free(password);
+            break;
+        }
+    }
     printf("handle message:\n");
 }
 
@@ -124,7 +130,7 @@ void client_socket_callback(void* args) {
     server_client_t* server_client = get_client(server, client_fd);
     if (server_client == 0) {
         printf("No client found with fd: %d\n", client_fd);
-        single_linked_list_print(server->server_client_node);;
+        single_linked_list_print(server->server_client_node);
         close(client_fd);
         free(args);
         deregister_fd_callback(client_fd);
@@ -150,19 +156,19 @@ void client_socket_callback(void* args) {
 
     connect_four_header_t header;
     server_read_header(buf, &header);
-    printf("header len: %d\n", header.length);
-    printf("header type: %d\n", header.type);
     ssize_t full_message_size = 4 + header.length + calc_padding_of_header_len(header.length);
     if (server_client->curr_offset < full_message_size) {
         printf("server->curr_offset < full_message_size %ld\n", full_message_size);
         return;
     }
-    handle_package(buf);
+    handle_package(&header, server_client, buf);
     memmove(buf, buf + full_message_size,
             BUFFER_SIZE - full_message_size);
     server_client->curr_offset = BUFFER_SIZE - full_message_size;
 
     memcpy(server_client->message_buffer, buf, BUFFER_SIZE);
+
+    printf("new offset: %ld\n", server_client->curr_offset);
 }
 
 void server_socket_callback(void* args) {

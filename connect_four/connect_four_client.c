@@ -15,6 +15,12 @@ typedef struct socket_callback_args {
     struct timer* heartbeat_timer;
 } socket_callback_args_t;
 
+typedef struct {
+    client_t* client;
+    int server_fd;
+    char buf[BUFFER_SIZE];
+} server_callback_args_t;
+
 void end_game_error(client_t* client) {
     client->state = CONNECT_FOUR_CLIENT_STATE_ERROR;
     printf("Spiel wurde aufgrund eines Fehlers beendet.\n");
@@ -87,6 +93,59 @@ bool check_win(client_t* client) {
     } else {
         return false;
     }
+}
+
+void handle_package(connect_four_header_t* header, client_t* client, void* buf) {
+    switch (header->type) {
+        case CONNECT_FOUR_HEADER_TYPE_PEER_INFO: {
+            connect_four_peer_info peer_info;
+            char* username;
+            client_read_peer_info(buf, &peer_info, &username);
+            printf("handle peer info %s:\n", username);
+            free(username);
+            break;
+        }
+    }
+    printf("handle message:\n");
+}
+
+void server_callback(void* args) {
+    server_callback_args_t* server_callback_args = ((server_callback_args_t*) args);
+    client_t* client = server_callback_args->client;
+    int server_fd = server_callback_args->server_fd;
+
+    printf("curr offset: %ld\n", client->curr_offset);
+    char buf[BUFFER_SIZE];
+    memcpy(buf, client->message_buffer, BUFFER_SIZE);
+    ssize_t len = Recv(server_fd, buf + client->curr_offset, BUFFER_SIZE - client->curr_offset, 0);
+    printf("recv len:%ld\n", len);
+    if (len <= 0) {
+        close(server_fd);
+        free(args);
+        deregister_fd_callback(server_fd);
+        return;
+    }
+    client->curr_offset = len;
+    if (client->curr_offset < 4) {
+        printf("offset < 4\n");
+        return;
+    }
+
+    connect_four_header_t header;
+    server_read_header(buf, &header);
+    ssize_t full_message_size = 4 + header.length + calc_padding_of_header_len(header.length);
+    if (client->curr_offset < full_message_size) {
+        printf("server->curr_offset < full_message_size %ld\n", full_message_size);
+        return;
+    }
+    handle_package(&header, client, buf);
+    memmove(buf, buf + full_message_size,
+            BUFFER_SIZE - full_message_size);
+    client->curr_offset = BUFFER_SIZE - full_message_size;
+
+    memcpy(client->message_buffer, buf, BUFFER_SIZE);
+
+    printf("new offset: %ld\n", client->curr_offset);
 }
 
 void socket_callback(void* args) {
@@ -189,6 +248,15 @@ void socket_callback(void* args) {
             free(heartbeat_ack_message2.data);
             break;
         }
+        case CONNECT_FOUR_HEADER_TYPE_ERROR: {
+            connect_four_error_message_t error_message;
+            char* error;
+            read_error(buf, &error_message, &error);
+            printf("Error: %s\n", error);
+            client->state = CONNECT_FOUR_CLIENT_STATE_ERROR;
+            free(error);
+            break;
+        }
         default:
             printf("Unsupported header type: %d\n", header_type);
             break;
@@ -277,7 +345,8 @@ bool get_address_for_search(char* ip_str, char* port_str, uint32_t* ip, uint16_t
             result = curr;
             *ip = get_in_addr(curr->ai_addr);
             *port = get_in_port(curr->ai_addr);
-            printf("try to use address: %s %d %d\n", host_name_buffer, get_in_port(curr->ai_addr), ((struct sockaddr_in*) curr->ai_addr)->sin_port);
+            printf("try to use address: %s %d %d\n", host_name_buffer, get_in_port(curr->ai_addr),
+                   ((struct sockaddr_in*) curr->ai_addr)->sin_port);
         }
 
     } while ((curr = curr->ai_next) != NULL);
@@ -361,6 +430,14 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    server_callback_args_t* server_args = malloc(sizeof(socket_callback_args_t));
+    memset(server_args->buf, 0, sizeof(server_args->buf));
+    server_args->client = &client;
+    server_args->server_fd = server_fd;
+
+    register_fd_callback(server_fd, server_callback, server_args);
+
+
     printf("Server fd: %d\n", server_fd);
 
     char* client_ip_str = argv[3];
@@ -387,7 +464,6 @@ int main(int argc, char** argv) {
     socket_callback_args_t* args = malloc(sizeof(socket_callback_args_t));
     memset(args->buf, 0, sizeof(args->buf));
     args->client = &client;
-
 
 
     int send_res = client_send_register(&client, args->buf, client_ip, client_port, name, password);
