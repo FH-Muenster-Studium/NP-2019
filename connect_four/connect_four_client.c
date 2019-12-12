@@ -236,6 +236,8 @@ void stdin_callback(void* args) {
     client->last_column = column;
     client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK;
 
+    start_timer(socket_callback_args->set_column_timer, client->cl_time);
+
     client_send_set_column(client, buf, column);
 }
 
@@ -247,8 +249,8 @@ void send_set_column_timer_callback(void* args) {
     if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK) {
         client->cl_time *= 2;
         client_send_set_column(client, buf, client->last_column);
+        start_timer(socket_callback_args->set_column_timer, client->cl_time);
     }
-    start_timer(socket_callback_args->set_column_timer, client->cl_time);
 }
 
 void send_heartbeat_timer_callback(void* args) {
@@ -362,8 +364,6 @@ int main(int argc, char** argv) {
     register_stdin_callback(stdin_callback, args);
 
     start_timer(heartbeat_timer, client.hb_time);
-
-    start_timer(set_column_timer, client.cl_time);
 
     handle_events();
 
