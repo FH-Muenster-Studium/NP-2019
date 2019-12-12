@@ -27,4 +27,6 @@ void single_linked_list_print(struct Node* singleLinkedList);
 
 void* single_linked_list_find(struct Node* singleLinkedList, int key);
 
+bool single_linked_list_has_data(struct Node* singleLinkedList, bool(*find)(void*, void*), void* data_to_find);
+
 #endif //AUD_1_SINGLE_LINKED_LIST_H

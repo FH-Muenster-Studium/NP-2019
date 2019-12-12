@@ -101,7 +101,7 @@ void handle_package(connect_four_header_t* header, client_t* client, void* buf) 
             connect_four_peer_info peer_info;
             char* username;
             client_read_peer_info(buf, &peer_info, &username);
-            printf("handle peer info %s:\n", username);
+            printf("handle peer info %s\n", username);
             free(username);
             break;
         }

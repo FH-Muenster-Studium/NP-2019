@@ -97,3 +97,14 @@ void* single_linked_list_find(struct Node* singleLinkedList, int key) {
     }
     return 0;
 }
+
+bool single_linked_list_has_data(struct Node* singleLinkedList, bool(*find)(void*, void*), void* data_to_find) {
+    singleLinkedList = singleLinkedList->next;
+    while (singleLinkedList != NULL) {
+        if (find(singleLinkedList->data, data_to_find) == true) {
+            return true;
+        }
+        singleLinkedList = singleLinkedList->next;
+    }
+    return false;
+}

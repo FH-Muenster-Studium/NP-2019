@@ -122,6 +122,10 @@ typedef socklen_t client_addr_len_t;
 #define CONNECT_FOUR_CLIENT_STATE_GAME_END 5
 #define CONNECT_FOUR_CLIENT_STATE_ERROR -1
 
+#define SERVER_CLIENT_STATE_PENDING 1
+#define SERVER_CLIENT_STATE_REGISTERED 2
+#define SERVER_CLIENT_STATE_PLAYING 3
+
 typedef struct client {
     int16_t state;
     bool first;
@@ -144,11 +148,17 @@ typedef struct {
     char message_buffer[BUFFER_SIZE];
     ssize_t curr_offset;
     char send_buffer[BUFFER_SIZE];
+    int state;
+    char* name;
+    char* password;
+    uint32_t ip;
+    uint16_t port;
 } server_client_t;
 
 typedef struct {
     int server_fd;
     struct Node* server_client_node;
+    int registered_client_count;
 } server_t;
 
 void init_server(server_t* server);
@@ -156,6 +166,8 @@ void init_server(server_t* server);
 void add_client(server_t* server, int fd);
 
 void remove_client(server_t* server, int fd);
+
+bool has_client(server_t* server, char* name);
 
 server_client_t* get_client(server_t* server, int fd);
 

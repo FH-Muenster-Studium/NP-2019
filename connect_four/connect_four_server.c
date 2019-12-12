@@ -105,17 +105,31 @@ int get_address_for_search_for_tcp(char* ip, char* port) {
     return fd;
 }
 
-void handle_package(connect_four_header_t* header, server_client_t* server_client, void* buf) {
+void handle_package(connect_four_header_t* header, server_t* server, server_client_t* server_client, void* buf) {
     switch (header->type) {
         case CONNECT_FOUR_HEADER_TYPE_REGISTRATION_REQUEST: {
+            if (server_client->state != SERVER_CLIENT_STATE_PENDING) return;
             connect_four_register_request_t register_request;
             char* username;
             char* password;
             server_read_register(buf, &register_request, &username, &password);
-            printf("handle registration %d %d %s %s:\n", register_request.name_length, register_request.password_length, username, password);
-            server_send_peer_info(server_client, NULL, 0, 0, 0, "test3");
-            free(username);
-            free(password);
+            if (has_client(server, username)) {
+                printf("Client name already present: %s\n", server_client->name);
+                remove_client(server, server_client->client_fd);
+                return;
+            }
+
+            server_client->name = username;
+            server_client->password = password;
+            server_client->state = SERVER_CLIENT_STATE_REGISTERED;
+
+            server->registered_client_count++;
+            if (server->registered_client_count == 2) {
+                //TODO: send peer info from other client to other
+                printf("Will deliver messages\n");
+            }
+            //printf("handle registration %d %d %s %s:\n", register_request.name_length, register_request.password_length, username, password);
+            //server_send_peer_info(server_client, NULL, 0, 0, 0, "test3");
             break;
         }
     }
@@ -161,7 +175,7 @@ void client_socket_callback(void* args) {
         printf("server->curr_offset < full_message_size %ld\n", full_message_size);
         return;
     }
-    handle_package(&header, server_client, buf);
+    handle_package(&header, server, server_client, buf);
     memmove(buf, buf + full_message_size,
             BUFFER_SIZE - full_message_size);
     server_client->curr_offset = BUFFER_SIZE - full_message_size;

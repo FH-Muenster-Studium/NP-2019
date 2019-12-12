@@ -361,20 +361,42 @@ int server_send_peer_info(server_client_t* server_client, char buf[], uint32_t i
 
 void init_server(server_t* server) {
     server->server_client_node = single_linked_list_init();
+    server->registered_client_count = 0;
 }
 
 void add_client(server_t* server, int fd) {
     server_client_t* client = malloc(sizeof(server_client_t));
     client->curr_offset = 0;
     client->client_fd = fd;
+    client->state = SERVER_CLIENT_STATE_PENDING;
+    client->name = NULL;
+    client->password = NULL;
     single_linked_list_insert(server->server_client_node, fd, client);
 }
 
 void remove_client(server_t* server, int fd) {
     void* data;
     if (single_linked_list_delete(server->server_client_node, fd, &data) == true) {
+        server_client_t* server_client = (server_client_t*)data;
+        if (server_client->name != NULL) {
+            free(server_client->name);
+        }
+        if (server_client->password != NULL) {
+            free(server_client->password);
+        }
         free(data);
     }
+}
+
+bool has_client_with_name(void* data, void* data_to_find) {
+    server_client_t* server_client = (server_client_t*) data;
+    char* name_to_find = (char*) data_to_find;
+    if (name_to_find == NULL) return false;
+    return memcmp(server_client->name, name_to_find, strlen(data_to_find)) == 0 ? true : false;
+}
+
+bool has_client(server_t* server, char* name) {
+    return single_linked_list_has_data(server->server_client_node, has_client_with_name, name);
 }
 
 server_client_t* get_client(server_t* server, int fd) {
