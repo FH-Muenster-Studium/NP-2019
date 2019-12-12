@@ -8,6 +8,7 @@
 #include "Socket.h"
 #include "4clib.h"
 #include <string.h>
+#include "single_linked_list.h"
 
 // Network protocol (messages)
 
@@ -136,10 +137,23 @@ typedef struct client {
 } client_t;
 
 typedef struct {
+    int client_fd;
     char message_buffer[BUFFER_SIZE];
-    int server_fd;
     ssize_t curr_offset;
+} server_client_t;
+
+typedef struct {
+    int server_fd;
+    struct Node* server_client_node;
 } server_t;
+
+void init_server(server_t* server);
+
+void add_client(server_t* server, int fd);
+
+void remove_client(server_t* server, int fd);
+
+server_client_t* get_client(server_t* server, int fd);
 
 void init_client(client_t* client, client_addr_t other_client_addr, client_addr_len_t other_client_addr_len, int port, int other_client_fd, int server_fd);
 
@@ -174,5 +188,9 @@ void read_set_column_ack(char buf[], connect_four_set_column_ack_message_t* mess
 void read_heartbeat(char buf[], ssize_t len, connect_four_heartbeat_message_t* message);
 
 void read_heartbeat_ack(char buf[], ssize_t len, connect_four_heartbeat_ack_message_t* message);
+
+void server_read_register(char buf[], ssize_t len, connect_four_register_request* message);
+
+void server_read_header(char buf[], connect_four_header_t* message);
 
 #endif //CONNECT_FOUR_CLIENT_CONNECT_FOUR_LIB_H

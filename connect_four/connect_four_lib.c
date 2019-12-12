@@ -134,6 +134,16 @@ void read_heartbeat_ack(char buf[], ssize_t len, connect_four_heartbeat_ack_mess
     memcpy(message->data, buf + sizeof(uint16_t) + sizeof(uint16_t), len);
 }
 
+void server_read_header(char buf[], connect_four_header_t* message) {
+    message->type = ntohs(charToU16bitNum(buf));
+    message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
+}
+
+void server_read_register(char buf[], ssize_t len, connect_four_register_request* message) {
+    message->type = ntohs(charToU16bitNum(buf));
+    message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
+}
+
 void client_send_set_column(client_t* client, char buf[], uint16_t column) {
     connect_four_set_column_message_t message;
     message.type = htons(CONNECT_FOUR_HEADER_TYPE_SET_COLUMN);
@@ -221,7 +231,7 @@ int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t por
     } else {
         padding_length = sizeof(uint32_t) - none_full_alignment_length;
     }*/
-    ssize_t struct_size = sizeof(connect_four_register_request) + name_length + password_length;
+    uint16_t struct_size = sizeof(connect_four_register_request) + name_length + password_length;
     ssize_t none_full_alignment_length = struct_size % sizeof(uint32_t);
     ssize_t padding_length;
     if (none_full_alignment_length == 0) {
@@ -233,7 +243,7 @@ int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t por
     connect_four_register_request* register_request = malloc(full_struct_size);
     register_request->type = htons(CONNECT_FOUR_HEADER_TYPE_REGISTRATION_REQUEST);
 
-    register_request->length = htons(sizeof(connect_four_register_request) + name_length + password_length);
+    register_request->length = htons(struct_size - sizeof(connect_four_header_t));
     register_request->ip_address = htonl(ip);
     register_request->port = htons(port);
     register_request->name_length = htons(name_length);
@@ -241,12 +251,17 @@ int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t por
     memcpy(register_request->data, name, name_length);
     memcpy(register_request->data + name_length, password, password_length);
 
-    printf("header len: %ld\n", full_struct_size);
+    printf("struct name len: %d\n", name_length);
+    printf("struct pwd len: %d\n", password_length);
+    printf("struct padding len: %ld\n", padding_length);
+    printf("struct mem len: %ld\n", sizeof(connect_four_register_request));
+    printf("struct header len: %d\n", ntohs(register_request->length));
+    printf("struct len: %ld\n", full_struct_size);
 
     //uint16_t full_length = sum_length + padding_length;
 
     /*int16ToChar(buf, CONNECT_FOUR_HEADER_TYPE_REGISTRATION_REQUEST);
-    int16ToChar(buf + sizeof(uint16_t), htons(sum_length));
+    int16ToChar(buf + sizeof(uint16_t), htons(struct_size - sizeof(connect_four_header_t)));
     uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t), ip);
     int16ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t), port);
     int16ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t), name_length);
@@ -255,4 +270,27 @@ int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t por
     memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + name_length, password, password_length);*/
 
     return client_send_server_message(client, (char*) register_request, full_struct_size);
+}
+
+void init_server(server_t* server) {
+    server->server_client_node = single_linked_list_init();
+}
+
+void add_client(server_t* server, int fd) {
+    server_client_t* client = malloc(sizeof(server_client_t));
+    client->curr_offset = 0;
+    client->client_fd = fd;
+    single_linked_list_insert(server->server_client_node, fd, client);
+}
+
+void remove_client(server_t* server, int fd) {
+    void* data;
+    if (single_linked_list_delete(server->server_client_node, fd, &data) == true) {
+        free(data);
+    }
+}
+
+server_client_t* get_client(server_t* server, int fd) {
+    server_client_t* curr_server_client = single_linked_list_find(server->server_client_node, fd);
+    return curr_server_client;
 }

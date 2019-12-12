@@ -379,14 +379,16 @@ int main(int argc, char** argv) {
 
     printf("Client fd: %d\n", client_fd);
 
-    char* name = argv[0];
-    char* password = argv[0];
+    char* name = argv[5];
+    char* password = argv[6];
 
     init_client(&client, 0, 0, 0, client_fd, server_fd);
 
     socket_callback_args_t* args = malloc(sizeof(socket_callback_args_t));
     memset(args->buf, 0, sizeof(args->buf));
     args->client = &client;
+
+
 
     int send_res = client_send_register(&client, args->buf, client_ip, client_port, name, password);
 

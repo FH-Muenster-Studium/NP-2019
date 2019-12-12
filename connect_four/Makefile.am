@@ -1,3 +1,3 @@
 bin_PROGRAMS        = connect_four_client connect_four_server
-connect_four_client_SOURCES = connect_four_client.c Socket.h Socket.c 4clib.h 4clib.c cblib.h cblib.c connect_four_lib.h connect_four_lib.c
-connect_four_server_SOURCES = connect_four_server.c Socket.h Socket.c cblib.h cblib.c connect_four_lib.h connect_four_lib.c
+connect_four_client_SOURCES = connect_four_client.c Socket.h Socket.c 4clib.h 4clib.c cblib.h cblib.c connect_four_lib.h connect_four_lib.c single_linked_list.h single_linked_list.c
+connect_four_server_SOURCES = connect_four_server.c Socket.h Socket.c cblib.h cblib.c connect_four_lib.h connect_four_lib.c single_linked_list.h single_linked_list.c

@@ -120,32 +120,49 @@ void client_socket_callback(void* args) {
     socket_receive_callback_args_t* socket_receive_callback_args = ((socket_receive_callback_args_t*) args);
     int client_fd = socket_receive_callback_args->client_fd;
     server_t* server = socket_receive_callback_args->server;
-    //char buf[BUFFER_SIZE];
-    //memset(buf, 0, sizeof(buf));
-    printf("curr offset: %ld\n", server->curr_offset);
-    ssize_t len = Recv(client_fd, /*buf*/server + server->curr_offset, /*sizeof(buf)*/BUFFER_SIZE - server->curr_offset, 0);
-    printf("recv len:%ld\n", len);
-    if (len <= 0) {
+    printf("Try to get client for fd:%d\n", client_fd);
+    server_client_t* server_client = get_client(server, client_fd);
+    if (server_client == 0) {
+        printf("No client found with fd: %d\n", client_fd);
+        single_linked_list_print(server->server_client_node);;
         close(client_fd);
         free(args);
         deregister_fd_callback(client_fd);
         return;
     }
-    server->curr_offset = len;
-    if (server->curr_offset < 4) {
+    printf("curr offset: %ld\n", server_client->curr_offset);
+    char buf[BUFFER_SIZE];
+    memcpy(buf, server_client->message_buffer, BUFFER_SIZE);
+    ssize_t len = Recv(client_fd, buf + server_client->curr_offset, BUFFER_SIZE - server_client->curr_offset, 0);
+    printf("recv len:%ld\n", len);
+    if (len <= 0) {
+        remove_client(server, client_fd);
+        close(client_fd);
+        free(args);
+        deregister_fd_callback(client_fd);
+        return;
+    }
+    server_client->curr_offset = len;
+    if (server_client->curr_offset < 4) {
         printf("offset < 4\n");
         return;
     }
-    connect_four_header_t* header = (connect_four_header_t*) server->message_buffer;
-    printf("header len: %d\n", ntohs(header->length));
-    ssize_t full_message_size = 4 + ntohs(header->length) + calc_padding_of_header_len(ntohs(header->length));
-    if (server->curr_offset < full_message_size) {
+
+    connect_four_header_t header;
+    server_read_header(buf, &header);
+    printf("header len: %d\n", header.length);
+    printf("header type: %d\n", header.type);
+    ssize_t full_message_size = 4 + header.length + calc_padding_of_header_len(header.length);
+    if (server_client->curr_offset < full_message_size) {
         printf("server->curr_offset < full_message_size %ld\n", full_message_size);
         return;
     }
-    handle_package(server->message_buffer);
-    memmove(server->message_buffer, server->message_buffer + full_message_size, BUFFER_SIZE - full_message_size);
-    server->curr_offset = BUFFER_SIZE - full_message_size;
+    handle_package(buf);
+    memmove(buf, buf + full_message_size,
+            BUFFER_SIZE - full_message_size);
+    server_client->curr_offset = BUFFER_SIZE - full_message_size;
+
+    memcpy(server_client->message_buffer, buf, BUFFER_SIZE);
 }
 
 void server_socket_callback(void* args) {
@@ -158,10 +175,13 @@ void server_socket_callback(void* args) {
     client_addr_len = (socklen_t) sizeof(client_addr);
     printf("client accept\n");
     int client_fd = Accept(server->server_fd, (struct sockaddr*) &client_addr, &client_addr_len);
+    if (client_fd <= 0) return;
+    add_client(server, client_fd);
+
     printf("client accepted: %d %s\n", client_fd, inet_ntoa(((struct sockaddr_in*) &client_addr)->sin_addr));
 
     socket_receive_callback_args_t* receive_args = malloc(sizeof(socket_receive_callback_args_t));
-    receive_args->server = socket_callback_args->server;
+    receive_args->server = server;
     receive_args->client_fd = client_fd;
     register_fd_callback(client_fd, client_socket_callback, receive_args);
 }
@@ -176,6 +196,8 @@ int main(int argc, char** argv) {
 
     server_t server;
 
+    init_server(&server);
+
     char* server_ip_str = argv[1];
     char* server_port_str = argv[2];
 
@@ -183,11 +205,10 @@ int main(int argc, char** argv) {
 
     int server_fd = get_address_for_search_for_tcp(server_ip_str, server_port_str);
 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int)) < 0)
         perror("setsockopt(SO_REUSEADDR) failed");
 
     server.server_fd = server_fd;
-    server.curr_offset = 0;
 
     socket_accept_callback_args_t* args = malloc(sizeof(socket_accept_callback_args_t));
     memset(args->buf, 0, sizeof(args->buf));
