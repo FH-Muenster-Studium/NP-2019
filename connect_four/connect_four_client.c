@@ -236,6 +236,7 @@ void stdin_callback(void* args) {
     client->last_column = column;
     client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK;
 
+    client->cl_time = 1000;
     start_timer(socket_callback_args->set_column_timer, client->cl_time);
 
     client_send_set_column(client, buf, column);
