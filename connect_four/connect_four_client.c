@@ -245,7 +245,6 @@ void send_set_column_timer_callback(void* args) {
     char* buf = socket_callback_args->buf;
     client_t* client = socket_callback_args->client;
     if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK) {
-        printf("%lld\n", client->cl_time);
         client->cl_time *= 2;
         client_send_set_column(client, buf, client->last_column);
     }
@@ -259,7 +258,6 @@ void send_heartbeat_timer_callback(void* args) {
     client_t* client = socket_callback_args->client;
 
     if (client->state != CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
-        printf("%lld\n", client->hb_time);
         client->hb_time *= 2;
         client_send_heartbeat(client, buf);
         if (time(NULL) * 1000 - client->last_heartbeat_received > 30000) {
