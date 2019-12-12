@@ -32,7 +32,7 @@ ssize_t client_send_message(client_t* client, char* buf, ssize_t len) {
 }
 
 ssize_t client_send_server_message(client_t* client, char* buf, ssize_t len) {
-    printf("send server message:%d\n",client->server_fd);
+    printf("send server message:%d\n", client->server_fd);
     return Send(client->server_fd, buf, len, 0);
 }
 
@@ -102,7 +102,7 @@ uint16_t charToU16bitNum(char a[]) {
     return n;
 }
 
-void read_header(char buf[], connect_four_header_t *header) {
+void read_header(char buf[], connect_four_header_t* header) {
     header->type = ntohs(charToU16bitNum(buf));
     header->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
 }
@@ -110,14 +110,14 @@ void read_header(char buf[], connect_four_header_t *header) {
 void read_set_column(char buf[], connect_four_set_column_message_t* message) {
     message->type = ntohs(charToU16bitNum(buf));
     message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
-    message->seq = ntohl(charToU32bitNum(buf + sizeof(uint16_t) +  + sizeof(uint16_t)));
-    message->column = ntohs(charToU16bitNum(buf +  + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t)));
+    message->seq = ntohl(charToU32bitNum(buf + sizeof(uint16_t) + +sizeof(uint16_t)));
+    message->column = ntohs(charToU16bitNum(buf + +sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t)));
 }
 
 void read_set_column_ack(char buf[], connect_four_set_column_ack_message_t* message) {
     message->type = ntohs(charToU16bitNum(buf));
     message->length = ntohs(charToU16bitNum(buf + sizeof(uint16_t)));
-    message->seq = ntohl(charToU32bitNum(buf + sizeof(uint16_t) +  + sizeof(uint16_t)));
+    message->seq = ntohl(charToU32bitNum(buf + sizeof(uint16_t) + +sizeof(uint16_t)));
 }
 
 void read_heartbeat(char buf[], ssize_t len, connect_four_heartbeat_message_t* message) {
@@ -254,5 +254,5 @@ int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t por
     memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t), name, name_length);
     memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + name_length, password, password_length);*/
 
-    return client_send_server_message(client, buf, full_struct_size);
+    return client_send_server_message(client, (char*) register_request, full_struct_size);
 }

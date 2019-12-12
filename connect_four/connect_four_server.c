@@ -123,9 +123,7 @@ void client_socket_callback(void* args) {
     //char buf[BUFFER_SIZE];
     //memset(buf, 0, sizeof(buf));
     printf("curr offset: %ld\n", server->curr_offset);
-    char buf[BUFFER_SIZE];
-    memmove(buf, server->message_buffer, BUFFER_SIZE);
-    ssize_t len = Recv(client_fd, /*buf*/buf + server->curr_offset, /*sizeof(buf)*/BUFFER_SIZE - server->curr_offset, 0);
+    ssize_t len = Recv(client_fd, /*buf*/server + server->curr_offset, /*sizeof(buf)*/BUFFER_SIZE - server->curr_offset, 0);
     printf("recv len:%ld\n", len);
     if (len <= 0) {
         close(client_fd);
@@ -138,17 +136,16 @@ void client_socket_callback(void* args) {
         printf("offset < 4\n");
         return;
     }
-    connect_four_header_t* header = (connect_four_header_t*) buf;
+    connect_four_header_t* header = (connect_four_header_t*) server->message_buffer;
     printf("header len: %d\n", ntohs(header->length));
     ssize_t full_message_size = 4 + ntohs(header->length) + calc_padding_of_header_len(ntohs(header->length));
     if (server->curr_offset < full_message_size) {
         printf("server->curr_offset < full_message_size %ld\n", full_message_size);
         return;
     }
-    handle_package(buf);
-    memmove(buf, buf + full_message_size, BUFFER_SIZE - full_message_size);
+    handle_package(server->message_buffer);
+    memmove(server->message_buffer, server->message_buffer + full_message_size, BUFFER_SIZE - full_message_size);
     server->curr_offset = BUFFER_SIZE - full_message_size;
-    memmove(server->message_buffer, buf, BUFFER_SIZE);
 }
 
 void server_socket_callback(void* args) {
