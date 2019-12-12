@@ -10,45 +10,14 @@
 
 typedef struct socket_callback_args {
     client_t* client;
-    int fd;
     char buf[BUFFER_SIZE];
     struct timer* set_column_timer;
     struct timer* heartbeat_timer;
 } socket_callback_args_t;
 
-int init_socket(int port) {
-    /*int fd;
-    struct sockaddr_in6 server_addr;
-
-    fd = Socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-
-    memset((void*) &server_addr, 0, sizeof(server_addr));
-    server_addr.sin6_family = AF_INET6;
-#ifdef HAVE_SIN_LEN
-    server_addr.sin6_len = sizeof(struct sockaddr_in6);
-#endif
-    struct in6_addr any_addr = IN6ADDR_ANY_INIT;
-    server_addr.sin6_addr = any_addr;
-    if (port) {
-        server_addr.sin6_port = htons(port);
-    }
-    int* option = 0;
-    setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &option, sizeof(int));
-    Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));*/
-    int fd;
-    struct sockaddr_in server_addr;
-
-    fd = Socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-    memset((void*) &server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-#ifdef HAVE_SIN_LEN
-    server_addr.sin_len = sizeof(struct sockaddr_in);
-#endif
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(port);
-    Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
-    return fd;
+void end_game_error(client_t* client) {
+    client->state = CONNECT_FOUR_CLIENT_STATE_ERROR;
+    printf("Spiel wurde aufgrund eines Fehlers beendet.\n");
 }
 
 int get_port_of_socket(int fd) {
@@ -67,6 +36,14 @@ in_port_t get_in_port(struct sockaddr* sa) {
     return ntohs((((struct sockaddr_in6*) sa)->sin6_port));
 }
 
+in_addr_t get_in_addr(struct sockaddr* sa) {
+    if (sa->sa_family == AF_INET) {
+        return ntohl(((struct sockaddr_in*) sa)->sin_addr.s_addr);
+    }
+
+    return 0;
+}
+
 void set_in_port(struct sockaddr* sa, in_port_t port) {
     if (sa->sa_family == AF_INET) {
         ((struct sockaddr_in*) sa)->sin_port = htons(port);
@@ -80,6 +57,17 @@ void fill_hints(struct addrinfo* hints) {
     hints->ai_family = AF_UNSPEC;
     hints->ai_socktype = SOCK_DGRAM;
     hints->ai_protocol = IPPROTO_UDP;
+    hints->ai_flags = 0;
+    hints->ai_canonname = NULL;
+    hints->ai_addr = NULL;
+    hints->ai_next = NULL;
+}
+
+void fill_tcp_hints(struct addrinfo* hints) {
+    memset(hints, 0, sizeof(struct addrinfo));
+    hints->ai_family = AF_UNSPEC;
+    hints->ai_socktype = SOCK_STREAM;
+    hints->ai_protocol = IPPROTO_TCP;
     hints->ai_flags = 0;
     hints->ai_canonname = NULL;
     hints->ai_addr = NULL;
@@ -103,7 +91,6 @@ bool check_win(client_t* client) {
 
 void socket_callback(void* args) {
     socket_callback_args_t* socket_callback_args = ((socket_callback_args_t*) args);
-    int fd = socket_callback_args->fd;
     client_t* client = socket_callback_args->client;
     struct sockaddr client_addr;
     socklen_t client_addr_len;
@@ -111,7 +98,7 @@ void socket_callback(void* args) {
     memset((void*) &client_addr, 0, sizeof(client_addr));
     char buf[BUFFER_SIZE];
     memset(buf, 0, sizeof(buf));
-    ssize_t len = Recvfrom(fd, buf, sizeof(buf), 0, &client_addr, &client_addr_len);
+    ssize_t len = Recvfrom(client->other_client_fd, buf, sizeof(buf), 0, &client_addr, &client_addr_len);
     if (len < 0) return;
     //printf("recv len:%ld\n", len);
     if (len < sizeof(connect_four_header_t)) {
@@ -131,7 +118,7 @@ void socket_callback(void* args) {
         client->other_client_addr_len = client_addr_len; //TODO: not required
         client->other_client_addr = &client_addr; //TODO: not required
 
-        Connect(client->socket_fd, &client_addr, client_addr_len);
+        Connect(client->other_client_fd, &client_addr, client_addr_len);
 
         client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN;
     }
@@ -144,6 +131,8 @@ void socket_callback(void* args) {
 
                 if (!valid_move(set_column.column)) {
                     client_send_error(client, buf, "Cause 1: Invalid column");
+                    end_game_error(client);
+                    return;
                 }
 
                 printf("ack c %d\n", client->seq);
@@ -212,7 +201,6 @@ int entered_column_to_data_column(int column) {
 
 void stdin_callback(void* args) {
     socket_callback_args_t* socket_callback_args = ((socket_callback_args_t*) args);
-    int fd = socket_callback_args->fd;
     char* buf = socket_callback_args->buf;
     client_t* client = socket_callback_args->client;
     ssize_t len = Read(STDIN_FILENO, (void*) buf, sizeof(buf));
@@ -235,7 +223,6 @@ void stdin_callback(void* args) {
 
 void send_set_column_timer_callback(void* args) {
     socket_callback_args_t* socket_callback_args = ((socket_callback_args_t*) args);
-    int fd = socket_callback_args->fd;
     char* buf = socket_callback_args->buf;
     client_t* client = socket_callback_args->client;
     if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK) {
@@ -246,11 +233,11 @@ void send_set_column_timer_callback(void* args) {
 
 void send_heartbeat_timer_callback(void* args) {
     socket_callback_args_t* socket_callback_args = ((socket_callback_args_t*) args);
-    int fd = socket_callback_args->fd;
     char* buf = socket_callback_args->buf;
     client_t* client = socket_callback_args->client;
 
-    if (client->state != CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
+    if (client->state != CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN &&
+        client->state != CONNECT_FOUR_CLIENT_STATE_ERROR) {
         client_send_heartbeat(client, buf);
         if (time(NULL) * 1000 - client->last_heartbeat_received > 30000) {
             printf("No signal in last 30 seconds.\n");
@@ -260,81 +247,158 @@ void send_heartbeat_timer_callback(void* args) {
     start_timer(socket_callback_args->heartbeat_timer, 1000);
 }
 
+bool get_address_for_search(char* ip_str, char* port_str, uint32_t* ip, uint16_t* port) {
+
+    struct addrinfo hints;
+
+    struct addrinfo* result = NULL;
+
+    struct addrinfo* curr = NULL;
+
+    char host_name_buffer[NI_MAXHOST];
+
+    fill_hints(&hints);
+
+    result = NULL;
+
+    Getaddrinfo(ip_str, port_str, &hints, &result);
+
+    curr = result;
+
+    if (result == NULL) {
+        printf("No address found for: %s:%s \n", ip_str, port_str);
+        return 0;
+    }
+
+    do {
+        Getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
+                    NI_NUMERICHOST);
+        if (curr->ai_family == AF_INET) {
+            result = curr;
+            *ip = get_in_addr(curr->ai_addr);
+            *port = get_in_port(curr->ai_addr);
+            printf("try to use address: %s %d %d\n", host_name_buffer, get_in_port(curr->ai_addr), ((struct sockaddr_in*) curr->ai_addr)->sin_port);
+        }
+
+    } while ((curr = curr->ai_next) != NULL);
+
+    int fd = Socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    Bind(fd, result->ai_addr, result->ai_addrlen);
+    freeaddrinfo(result);
+    return fd;
+}
+
+int get_address_for_search_for_tcp(char* ip, char* port) {
+    struct addrinfo* result, * curr;
+
+    int fd = -1;
+
+    struct addrinfo hints;
+
+    fill_tcp_hints(&hints);
+
+    char host_name_buffer[NI_MAXHOST];
+
+    Getaddrinfo(ip, port, &hints, &result);
+
+    if (result == NULL) {
+        printf("No address found for: %s:%s \n", ip, port);
+        return 0;
+    }
+
+    curr = result;
+
+    do {
+        Getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
+                    NI_NUMERICHOST);
+        if (curr->ai_family == AF_INET) {
+            printf("try connect to: %s %d\n", host_name_buffer, ntohs(((struct sockaddr_in*) curr->ai_addr)->sin_port));
+            fd = Socket(curr->ai_family, curr->ai_socktype, curr->ai_protocol);
+            if (fd < 0) continue;
+            if (Connect(fd, curr->ai_addr, curr->ai_addrlen) != 0) {
+                Close(fd);
+                fd = -1;
+                printf("not connected\n");
+            } else {
+                printf("connected\n");
+                break;
+            }
+            printf("------\n");
+        }
+
+    } while ((curr = curr->ai_next) != NULL);
+
+    freeaddrinfo(result);
+
+    if (fd == -1) {
+        printf("No server to connect\n");
+        return 0;
+    }
+
+    return fd;
+}
+
+//Server IP, Server Port, Eine IP, Eigenen Port, Name, Passwort
 int main(int argc, char** argv) {
 
     init_cblib();
 
     client_t client;
 
-    if (argc < 2) {
-        fprintf(stderr, "Provide server port\n");
+    if (argc < 7) {
+        fprintf(stderr, "Server IP, Server Port, Eine IP, Eigenen Port, Name, Passwort\n");
         return 0;
     }
 
-    int port = atoi(argv[1]);
-    if (port < 0) {
-        perror("Port needs to be positive");
-        return -1;
-    } else if (port == 0) {
-        perror("Port needs to be valid integer");
-        return -1;
+    char* server_ip_str = argv[1];
+    char* server_port_str = argv[2];
+
+    printf("Server IP %s Server Port %s\n", server_ip_str, server_port_str);
+
+    // Server IP, Server Port
+    int server_fd = get_address_for_search_for_tcp(server_ip_str, server_port_str);
+    if (server_fd < 1) {
+        return 0;
     }
 
-    printf("port to use:%d\n", port);
+    printf("Server fd: %d\n", server_fd);
 
-    int fd;
+    char* client_ip_str = argv[3];
+    char* client_port_str = argv[4];
 
-    if (argc < 3) {
-        // Client started only with port
-        printf("init own socket\n");
-        fd = init_socket(port);
-        printf("done own socket:%d %d\n", fd, get_port_of_socket(fd));
-        init_client(&client, NULL, 0, port, fd);
-    } else {
-        // Client started with port and ip
-        struct addrinfo hints;
+    printf("Client IP %s Client Port %s\n", client_ip_str, client_port_str);
 
-        struct addrinfo* result = NULL;
+    uint32_t client_ip = 0;
+    uint16_t client_port = 0;
 
-        fill_hints(&hints);
-
-        Getaddrinfo(argv[2], argv[1], &hints, &result);
-
-        if (result == NULL) {
-            printf("No address found for: %s:%s \n", argv[2], argv[1]);
-            return 0;
-        }
-
-        struct addrinfo* curr = NULL;
-
-        char host_name_buffer[NI_MAXHOST];
-
-        curr = result;
-
-        result = NULL;
-
-        do {
-            Getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
-                        NI_NUMERICHOST);
-            if (curr->ai_family == AF_INET) {
-                result = curr;
-                printf("try connect to: %s %d\n", host_name_buffer, get_in_port(curr->ai_addr));
-            }
-
-        } while ((curr = curr->ai_next) != NULL);
-
-        if (result == NULL) {
-            printf("No ipv6 address found for: %s:%s \n", argv[2], argv[1]);
-            return 0;
-        }
-
-        fd = init_socket(0);
-        printf("listening to port:%d\n", get_port_of_socket(fd));
-        Connect(fd, result->ai_addr, result->ai_addrlen);
-        printf("connect to ip and port:%d %d\n", fd, get_in_port(result->ai_addr));
-        init_client(&client, result->ai_addr, result->ai_addrlen, port, fd);
-        freeaddrinfo(result);
+    // Client IP, Client Port
+    int client_fd = get_address_for_search(client_ip_str, client_port_str, &client_ip, &client_port);
+    if (client_fd < 1) {
+        return 0;
     }
+
+    printf("Client fd: %d\n", client_fd);
+
+    char* name = argv[0];
+    char* password = argv[0];
+
+    init_client(&client, 0, 0, 0, client_fd, server_fd);
+
+    socket_callback_args_t* args = malloc(sizeof(socket_callback_args_t));
+    memset(args->buf, 0, sizeof(args->buf));
+    args->client = &client;
+
+    int send_res = client_send_register(&client, args->buf, client_ip, client_port, name, password);
+
+    printf("send result: %d\n", send_res);
+
+    handle_events();
+
+    /*printf("listening to port:%d\n", get_port_of_socket(own_client_fd));
+    Connect(fd, result->ai_addr, result->ai_addrlen);
+    printf("connect to ip and port:%d %d\n", fd, get_in_port(result->ai_addr));
+    init_client(&client, result->ai_addr, result->ai_addrlen, 0, fd);
+    freeaddrinfo(result);
 
     socket_callback_args_t* args = malloc(sizeof(socket_callback_args_t));
     memset(args->buf, 0, sizeof(args->buf));
@@ -359,7 +423,7 @@ int main(int argc, char** argv) {
 
     handle_events();
 
-    Close(fd);
+    Close(fd);*/
 
     return 0;
 }

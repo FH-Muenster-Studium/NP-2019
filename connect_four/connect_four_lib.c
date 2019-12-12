@@ -1,13 +1,13 @@
 #include "connect_four_lib.h"
 
 void init_client(client_t* client, client_addr_t other_client_addr, client_addr_len_t other_client_addr_len, int port,
-                 int other_client_fd) {
+                 int other_client_fd, int server_fd) {
     if (other_client_addr == NULL) {
         client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN;
         client->first = false;
         client->other_client_addr = NULL;
         client->other_client_addr_len = 0;
-        //client->socket_fd = 0;
+        //client->other_client_fd = 0;
         //client->seq = 0;
     } else {
         client->state = CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_USER_INPUT;
@@ -20,14 +20,20 @@ void init_client(client_t* client, client_addr_t other_client_addr, client_addr_
     time_t msec = time(NULL) * 1000;
     client->last_heartbeat_received = msec;
 
-    client->socket_fd = other_client_fd;
+    client->server_fd = server_fd;
+    client->other_client_fd = other_client_fd;
     client->heartbeat_count = 0;
     client->seq = 1;
     client->other_client_port = port;
 }
 
 ssize_t client_send_message(client_t* client, char* buf, ssize_t len) {
-    return Send(client->socket_fd, buf, len, 0);
+    return Send(client->other_client_fd, buf, len, 0);
+}
+
+ssize_t client_send_server_message(client_t* client, char* buf, ssize_t len) {
+    printf("send server message:%d\n",client->server_fd);
+    return Send(client->server_fd, buf, len, 0);
 }
 
 bool client_valid_ack(client_t* client, int seq) {
@@ -66,7 +72,15 @@ void int32ToChar(char a[], int32_t n) {
     memcpy(a, &n, 4);
 }
 
+void uint32ToChar(char a[], uint32_t n) {
+    memcpy(a, &n, 4);
+}
+
 void int64ToChar(char a[], int64_t n) {
+    memcpy(a, &n, 8);
+}
+
+void uint64ToChar(char a[], uint64_t n) {
     memcpy(a, &n, 8);
 }
 
@@ -192,4 +206,53 @@ void client_send_error(client_t* client, char buf[], char* cause) {
     memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t), cause, string_length);
 
     client_send_message(client, buf, size);
+}
+
+int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t port, char* name, char* password) {
+    uint16_t name_length = strlen(name) + 1;
+    uint16_t password_length = strlen(password) + 1;
+    /*ssize_t ip_length = sizeof(uint32_t);
+    ssize_t port_length = sizeof(uint16_t);
+    uint16_t sum_length = name_length + password_length + ip_length + port_length;
+    ssize_t none_full_alignment_length = sum_length % sizeof(uint32_t);
+    ssize_t padding_length;
+    if (none_full_alignment_length == 0) {
+        padding_length = 0;
+    } else {
+        padding_length = sizeof(uint32_t) - none_full_alignment_length;
+    }*/
+    ssize_t struct_size = sizeof(connect_four_register_request) + name_length + password_length;
+    ssize_t none_full_alignment_length = struct_size % sizeof(uint32_t);
+    ssize_t padding_length;
+    if (none_full_alignment_length == 0) {
+        padding_length = 0;
+    } else {
+        padding_length = sizeof(uint32_t) - none_full_alignment_length;
+    }
+    ssize_t full_struct_size = struct_size + padding_length;
+    connect_four_register_request* register_request = malloc(full_struct_size);
+    register_request->type = htons(CONNECT_FOUR_HEADER_TYPE_REGISTRATION_REQUEST);
+
+    register_request->length = htons(sizeof(connect_four_register_request) + name_length + password_length);
+    register_request->ip_address = htonl(ip);
+    register_request->port = htons(port);
+    register_request->name_length = htons(name_length);
+    register_request->password_length = htons(password_length);
+    memcpy(register_request->data, name, name_length);
+    memcpy(register_request->data + name_length, password, password_length);
+
+    printf("header len: %ld\n", full_struct_size);
+
+    //uint16_t full_length = sum_length + padding_length;
+
+    /*int16ToChar(buf, CONNECT_FOUR_HEADER_TYPE_REGISTRATION_REQUEST);
+    int16ToChar(buf + sizeof(uint16_t), htons(sum_length));
+    uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t), ip);
+    int16ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t), port);
+    int16ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t), name_length);
+    int16ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t), password_length);
+    memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t), name, name_length);
+    memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) + name_length, password, password_length);*/
+
+    return client_send_server_message(client, buf, full_struct_size);
 }

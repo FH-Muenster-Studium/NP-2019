@@ -24,7 +24,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -33,69 +32,187 @@
 #include "Socket.h"
 #include <arpa/inet.h>
 #include <time.h>
+#include "cblib.h"
+#include "connect_four_lib.h"
 
-#define BUFFER_SIZE (1<<16)
-#define PORT 2450 //7
+void fill_tcp_hints(struct addrinfo* hints) {
+    memset(hints, 0, sizeof(struct addrinfo));
+    hints->ai_family = AF_UNSPEC;
+    hints->ai_socktype = SOCK_STREAM;
+    hints->ai_protocol = IPPROTO_TCP;
+    hints->ai_flags = 0;
+    hints->ai_canonname = NULL;
+    hints->ai_addr = NULL;
+    hints->ai_next = NULL;
+}
 
-int
-main(void) {
-    int fd;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t client_addr_len;
+typedef struct {
+    server_t* server;
+    char buf[BUFFER_SIZE];
+    //struct timer* set_column_timer;
+    //struct timer* heartbeat_timer;
+} socket_accept_callback_args_t;
 
-    ssize_t len;
-
-    fd = Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-    memset((void*) &server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-#ifdef HAVE_SIN_LEN
-    server_addr.sin_len = sizeof(struct sockaddr_in);
-#endif
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(PORT);
-    if (Bind(fd, (const struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) return -1;
-
-    char timeBuffer[BUFFER_SIZE];
-    time_t raw_time;
-    struct tm* time_info;
-
-    Listen(fd, 1);
-
+typedef struct {
+    server_t* server;
+    char buf[BUFFER_SIZE];
     int client_fd;
+    //struct timer* set_column_timer;
+    //struct timer* heartbeat_timer;
+} socket_receive_callback_args_t;
 
-    int running = 1;
+int get_address_for_search_for_tcp(char* ip, char* port) {
+    struct addrinfo* result, * curr;
+
+    int fd = -1;
+
+    struct addrinfo hints;
+
+    fill_tcp_hints(&hints);
+
+    char host_name_buffer[NI_MAXHOST];
+
+    Getaddrinfo(ip, port, &hints, &result);
+
+    if (result == NULL) {
+        printf("No address found for: %s:%s \n", ip, port);
+        return 0;
+    }
+
+    curr = result;
+
+    do {
+        Getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
+                    NI_NUMERICHOST);
+        if (curr->ai_family == AF_INET) {
+            printf("------\n");
+            printf("try to use address: %s\n", host_name_buffer);
+            fd = Socket(curr->ai_family, curr->ai_socktype, curr->ai_protocol);
+            if (fd < 0) continue;
+            Bind(fd, curr->ai_addr, curr->ai_addrlen);
+            Listen(fd, 16);
+        }
+
+    } while ((curr = curr->ai_next) != NULL);
+
+    freeaddrinfo(result);
+
+    if (fd == -1) {
+        printf("No server to connect\n");
+        return 0;
+    }
+
+    return fd;
+}
+
+ssize_t calc_padding_of_header_len(uint16_t len) {
+    ssize_t diff = len % sizeof(uint32_t);
+    if (diff == 0) return 0;
+    return sizeof(uint32_t) - diff;
+}
+
+void handle_package(void* buf) {
+    //TODO:
+    printf("handle message:\n");
+}
+
+void client_socket_callback(void* args) {
+    socket_receive_callback_args_t* socket_receive_callback_args = ((socket_receive_callback_args_t*) args);
+    int client_fd = socket_receive_callback_args->client_fd;
+    server_t* server = socket_receive_callback_args->server;
+    //char buf[BUFFER_SIZE];
+    //memset(buf, 0, sizeof(buf));
+    ssize_t len = Recv(client_fd, /*buf*/&server + server->curr_offset, /*sizeof(buf)*/BUFFER_SIZE - server->curr_offset, 0);
+    printf("recv len:%ld\n", len);
+    if (len <= 0) {
+        close(client_fd);
+        free(args);
+        deregister_fd_callback(client_fd);
+        return;
+    }
+    server->curr_offset = len;
+    if (server->curr_offset < 4) {
+        printf("offset < 4\n");
+        return;
+    }
+    connect_four_header_t* header = (connect_four_header_t*) server->message_buffer;
+    printf("header len: %d\n", ntohs(header->length));
+    ssize_t full_message_size = 4 + ntohs(header->length) + calc_padding_of_header_len(ntohs(header->length));
+    if (server->curr_offset < full_message_size) {
+        printf("server->curr_offset < full_message_size %ld\n", full_message_size);
+        return;
+    }
+    handle_package(server->message_buffer);
+    memmove(server->message_buffer, server->message_buffer + full_message_size, BUFFER_SIZE - full_message_size);
+    server->curr_offset = BUFFER_SIZE - full_message_size;
+}
+
+void server_socket_callback(void* args) {
+    printf("server_socket_callback\n");
+    socket_accept_callback_args_t* socket_callback_args = ((socket_accept_callback_args_t*) args);
+    server_t* server = socket_callback_args->server;
+    struct sockaddr client_addr;
+    socklen_t client_addr_len;
+    memset((void*) &client_addr, 0, sizeof(client_addr));
+    client_addr_len = (socklen_t) sizeof(client_addr);
+    printf("client accept\n");
+    int client_fd = Accept(server->server_fd, (struct sockaddr*) &client_addr, &client_addr_len);
+    printf("client accepted: %d %s\n", client_fd, inet_ntoa(((struct sockaddr_in*) &client_addr)->sin_addr));
+
+    socket_receive_callback_args_t* receive_args = malloc(sizeof(socket_receive_callback_args_t));
+    receive_args->server = socket_callback_args->server;
+    receive_args->client_fd = client_fd;
+    register_fd_callback(client_fd, client_socket_callback, receive_args);
+}
+
+int main(int argc, char** argv) {
+    if (argc < 3) {
+        printf("Provide server ip address and port");
+        return 0;
+    }
+
+    init_cblib();
+
+    server_t server;
+
+    char* server_ip_str = argv[1];
+    char* server_port_str = argv[2];
+
+    printf("Server IP %s Server Port %s\n", server_ip_str, server_port_str);
+
+    int server_fd = get_address_for_search_for_tcp(server_ip_str, server_port_str);
+    int option = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+
+    server.server_fd = server_fd;
+    server.curr_offset = 0;
+
+    socket_accept_callback_args_t* args = malloc(sizeof(socket_accept_callback_args_t));
+    memset(args->buf, 0, sizeof(args->buf));
+    args->server = &server;
+
+    register_fd_callback(server_fd, server_socket_callback, args);
+
+    printf("Server fd: %d\n", server_fd);
+
+    /*int running = 1;
+
+    struct sockaddr client_addr;
+    socklen_t client_addr_len;
+    memset((void*) &client_addr, 0, sizeof(client_addr));
+    int client_fd;
 
     while (running) {
         printf("client accept\n");
         memset((void*) &client_addr, 0, sizeof(client_addr));
         client_addr_len = (socklen_t) sizeof(client_addr);
-        client_fd = Accept(fd, (struct sockaddr*) &client_addr, &client_addr_len);
-        printf("client accepted: %d %s\n", client_fd, inet_ntoa(client_addr.sin_addr));
+        client_fd = Accept(server_fd, (struct sockaddr*) &client_addr, &client_addr_len);
+        printf("client accepted: %d %s\n", client_fd, inet_ntoa(((struct sockaddr_in*) &client_addr)->sin_addr));
+    }*/
 
-        memset((void*) timeBuffer, 0, sizeof(timeBuffer));
+    handle_events();
 
-        time(&raw_time);
-        time_info = localtime(&raw_time);
-
-        sprintf(timeBuffer, "%d.%d.%d %d:%d:%d\n", time_info->tm_mday, time_info->tm_mon + 1,
-                time_info->tm_year + 1900,
-                time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
-
-        printf("Send %zd bytes to %s. %s\n", sizeof(timeBuffer), inet_ntoa(client_addr.sin_addr), timeBuffer);
-
-        Send(client_fd, (const void*) timeBuffer, strlen(timeBuffer), 0);
-
-        Shutdown(client_fd, SHUT_WR);
-
-        do {
-            len = Recv(client_fd, (void*) timeBuffer, sizeof(timeBuffer), 0);
-        } while (len > 0);
-
-        Close(client_fd);
-    }
-
-    Close(fd);
+    Close(server_fd);
 
     return 0;
 }

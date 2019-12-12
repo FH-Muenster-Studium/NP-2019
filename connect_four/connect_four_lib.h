@@ -22,6 +22,8 @@
 #define CONNECT_FOUR_HEADER_TYPE_HEARTBEAT_ACK 9
 #define CONNECT_FOUR_HEADER_TYPE_ERROR 10
 
+#define BUFFER_SIZE (1<<16)
+
 typedef struct {
     uint16_t type;
     uint16_t length;
@@ -73,6 +75,40 @@ typedef struct {
     char* data;
 } connect_four_error_message_t;
 
+typedef struct __attribute__((__packed__)) {
+    uint16_t type;
+    uint16_t length;
+    uint32_t ip_address;
+    uint16_t port;
+    uint16_t name_length;
+    uint16_t password_length;
+    char data[]; // name - password - padding
+} connect_four_register_request;
+
+typedef struct __attribute__((__packed__)) {
+    uint16_t type;
+    uint16_t length;
+} connect_four_register_ack;
+
+typedef struct __attribute__((__packed__)) {
+    uint16_t type;
+    uint16_t length;
+} connect_four_register_nack;
+
+typedef struct __attribute__((__packed__)) {
+    uint16_t type;
+    uint16_t length;
+    uint32_t ip_address;
+    uint16_t port;
+    uint16_t start;
+    void* data; // name - padding
+} connect_four_peer_info;
+
+typedef struct __attribute__((__packed__)) {
+    uint16_t type;
+    uint16_t length;
+} connect_four_peer_info_ack;
+
 // Client states
 
 typedef struct sockaddr* client_addr_t;
@@ -90,17 +126,26 @@ typedef struct client {
     bool first;
     client_addr_t other_client_addr;
     client_addr_len_t other_client_addr_len;
-    int socket_fd;
+    int other_client_fd;
     int32_t other_client_port;
     uint32_t seq;
     uint16_t last_column;
     int64_t heartbeat_count;
     int64_t last_heartbeat_received;
+    int server_fd;
 } client_t;
 
-void init_client(client_t* client, client_addr_t other_client_addr, client_addr_len_t other_client_addr_len, int port, int other_client_fd);
+typedef struct {
+    char message_buffer[BUFFER_SIZE];
+    int server_fd;
+    ssize_t curr_offset;
+} server_t;
+
+void init_client(client_t* client, client_addr_t other_client_addr, client_addr_len_t other_client_addr_len, int port, int other_client_fd, int server_fd);
 
 ssize_t client_send_message(client_t* client, char* buf, ssize_t len);
+
+ssize_t client_send_server_message(client_t* client, char* buf, ssize_t len);
 
 bool client_valid_ack(client_t* client, int seq);
 
@@ -115,6 +160,8 @@ void client_send_heartbeat(client_t* client, char buf[]);
 void client_send_set_column_ack(client_t* client, char buf[], uint32_t seq);
 
 void client_send_error(client_t* client, char buf[], char* cause);
+
+int client_send_register(client_t* client, char buf[], uint32_t ip, uint16_t port, char* name, char* password);
 
 int client_get_other_player_id(client_t* client);
 
