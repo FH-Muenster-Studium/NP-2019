@@ -162,6 +162,7 @@ typedef struct {
 typedef struct {
     int server_fd;
     struct Node* server_client_node;
+    struct Node* server_client_registered_node;
     //int registered_client_count;
     //server_client_t* first_client_fd;
     //server_client_t* second_client_fd;
@@ -223,5 +224,9 @@ int server_send_peer_info(server_client_t* server_client, char buf[], uint32_t i
 void client_read_peer_info(char buf[], connect_four_peer_info* message, char** username);
 
 ssize_t calc_padding_of_header_len(uint16_t len);
+
+void add_registered_client(server_t* server, server_client_t* client);
+
+void remove_registered_client(server_t* server, int fd);
 
 #endif //CONNECT_FOUR_CLIENT_CONNECT_FOUR_LIB_H

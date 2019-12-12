@@ -183,7 +183,9 @@ void client_read_peer_info(char buf[], connect_four_peer_info* message, char** u
             charToU16bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t)));
     ssize_t name_length = message->length - sizeof(connect_four_peer_info) + sizeof(connect_four_header_t);
     char text_buffer[name_length];
-    memcpy(text_buffer, buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t), name_length);
+    memcpy(text_buffer,
+           buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t),
+           name_length);
     *username = malloc(name_length);
     memcpy(*username, text_buffer, name_length);
 }
@@ -361,6 +363,7 @@ int server_send_peer_info(server_client_t* server_client, char buf[], uint32_t i
 
 void init_server(server_t* server) {
     server->server_client_node = single_linked_list_init();
+    server->server_client_registered_node = single_linked_list_init();
     //server->registered_client_count = 0;
     //server->state = SERVER_STATE_NO_CLIENTS;
     //server->first_client_fd = NULL;
@@ -377,10 +380,19 @@ void add_client(server_t* server, int fd) {
     single_linked_list_insert(server->server_client_node, fd, client);
 }
 
+void add_registered_client(server_t* server, server_client_t* client) {
+    single_linked_list_insert(server->server_client_registered_node, client->client_fd, client);
+}
+
+void remove_registered_client(server_t* server, int fd) {
+    void* data;
+    single_linked_list_delete(server->server_client_registered_node, fd, &data);
+}
+
 void remove_client(server_t* server, int fd) {
     void* data;
     if (single_linked_list_delete(server->server_client_node, fd, &data) == true) {
-        server_client_t* server_client = (server_client_t*)data;
+        server_client_t* server_client = (server_client_t*) data;
         if (server_client->name != NULL) {
             free(server_client->name);
         }

@@ -118,7 +118,7 @@ bool single_linked_list_iterate(struct Node* singleLinkedList, void(* callback)(
     return false;
 }
 
-bool single_linked_list_get_and_delete(struct Node* singleLinkedList, void(* callback)(void*, void*), void* iteration_data, int count) {
+bool single_linked_list_get_and_delete(struct Node* singleLinkedList, void* data[], int count) {
     struct Node* first = singleLinkedList;
     singleLinkedList = singleLinkedList->next;
     int curr_count = count;
@@ -127,6 +127,7 @@ bool single_linked_list_get_and_delete(struct Node* singleLinkedList, void(* cal
             first->next = singleLinkedList;
             return true;
         }
+        data[curr_count]
         callback(singleLinkedList->data, iteration_data);
         singleLinkedList = singleLinkedList->next;
         curr_count--;
