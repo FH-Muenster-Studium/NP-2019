@@ -105,18 +105,18 @@ int get_address_for_search_for_tcp(char* ip, char* port) {
     return fd;
 }
 
-void handle_package(connect_four_header_t* header, server_t* server, server_client_t* server_client, void* buf) {
+bool handle_package(connect_four_header_t* header, server_t* server, server_client_t* server_client, void* buf) {
     switch (header->type) {
         case CONNECT_FOUR_HEADER_TYPE_REGISTRATION_REQUEST: {
-            if (server_client->state != SERVER_CLIENT_STATE_PENDING) return;
+            if (server_client->state != SERVER_CLIENT_STATE_PENDING) return true;
             connect_four_register_request_t register_request;
             char* username;
             char* password;
             server_read_register(buf, &register_request, &username, &password);
             if (has_client(server, username)) {
-                printf("Client name already present: %s\n", server_client->name);
+                printf("Client name already present: %s\n", username);
                 remove_client(server, server_client->client_fd);
-                return;
+                return false;
             }
 
             server_client->name = username;
@@ -134,6 +134,7 @@ void handle_package(connect_four_header_t* header, server_t* server, server_clie
         }
     }
     printf("handle message:\n");
+    return true;
 }
 
 void client_socket_callback(void* args) {
@@ -175,7 +176,7 @@ void client_socket_callback(void* args) {
         printf("server->curr_offset < full_message_size %ld\n", full_message_size);
         return;
     }
-    handle_package(&header, server, server_client, buf);
+    if (!handle_package(&header, server, server_client, buf)) return;
     memmove(buf, buf + full_message_size,
             BUFFER_SIZE - full_message_size);
     server_client->curr_offset = BUFFER_SIZE - full_message_size;

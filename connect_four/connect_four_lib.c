@@ -390,6 +390,7 @@ void remove_client(server_t* server, int fd) {
 
 bool has_client_with_name(void* data, void* data_to_find) {
     server_client_t* server_client = (server_client_t*) data;
+    if (server_client->name == NULL) return false;
     char* name_to_find = (char*) data_to_find;
     if (name_to_find == NULL) return false;
     return memcmp(server_client->name, name_to_find, strlen(data_to_find)) == 0 ? true : false;

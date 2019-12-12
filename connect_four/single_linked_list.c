@@ -98,12 +98,21 @@ void* single_linked_list_find(struct Node* singleLinkedList, int key) {
     return 0;
 }
 
-bool single_linked_list_has_data(struct Node* singleLinkedList, bool(*find)(void*, void*), void* data_to_find) {
+bool single_linked_list_has_data(struct Node* singleLinkedList, bool(* find)(void*, void*), void* data_to_find) {
     singleLinkedList = singleLinkedList->next;
     while (singleLinkedList != NULL) {
         if (find(singleLinkedList->data, data_to_find) == true) {
             return true;
         }
+        singleLinkedList = singleLinkedList->next;
+    }
+    return false;
+}
+
+bool single_linked_list_iterate(struct Node* singleLinkedList, void(* callback)(void*, void*), void* iteration_data) {
+    singleLinkedList = singleLinkedList->next;
+    while (singleLinkedList != NULL) {
+        callback(singleLinkedList->data, iteration_data);
         singleLinkedList = singleLinkedList->next;
     }
     return false;
