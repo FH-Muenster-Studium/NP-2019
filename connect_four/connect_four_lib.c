@@ -19,11 +19,16 @@ void init_client(client_t* client, client_addr_t other_client_addr, client_addr_
 
     time_t msec = time(NULL) * 1000;
     client->last_heartbeat_received = msec;
+    client->last_column_received = msec;
+    client->hb_time_multiplier = 1;
+    client->cl_time_multiplier = 1;
 
     client->socket_fd = other_client_fd;
     client->heartbeat_count = 0;
     client->seq = 1;
     client->other_client_port = port;
+    client->hb_time = 1000;
+    client->cl_time = 1000;
 }
 
 ssize_t client_send_message(client_t* client, char* buf, ssize_t len) {
@@ -184,7 +189,7 @@ void client_send_error(client_t* client, char buf[], char* cause) {
     ssize_t string_length = strlen(cause) + 1;
     connect_four_error_message_t message;
     message.type = htons(CONNECT_FOUR_HEADER_TYPE_ERROR);
-    message.length = htonll(string_length);
+    message.length = htonl(string_length);
     ssize_t size = sizeof(connect_four_header_t) + string_length;
 
     int16ToChar(buf, message.type);
