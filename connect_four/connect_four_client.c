@@ -175,7 +175,6 @@ void socket_callback(void* args) {
             time_t msec = time(NULL) * 1000;
             client->last_column_received = msec;
             client->cl_time = 1000;
-            client->cl_time_multiplier = 1;
 
             make_move(client->last_column, client_get_player_id(client));
             print_board();
@@ -201,7 +200,6 @@ void socket_callback(void* args) {
                 time_t msec = time(NULL) * 1000;
                 client->last_heartbeat_received = msec;
                 client->hb_time = 1000;
-                client->hb_time_multiplier = 1;
                 client->heartbeat_count = client->heartbeat_count + 1;
                 //printf("heartbeat ack count:%lld\n", client->heartbeat_count);
             }
@@ -247,13 +245,10 @@ void send_set_column_timer_callback(void* args) {
     char* buf = socket_callback_args->buf;
     client_t* client = socket_callback_args->client;
     if (client->state == CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_TURN_ACK) {
-        if (client->cl_time_multiplier == 1) {
-            client->cl_time_multiplier = 2;
-        }
-        client->cl_time_multiplier = pow(client->cl_time_multiplier, 2);
+        printf("%lld\n", client->cl_time);
+        client->cl_time *= 2;
         client_send_set_column(client, buf, client->last_column);
     }
-    client->cl_time = client->cl_time_multiplier * client->cl_time;
     start_timer(socket_callback_args->set_column_timer, client->cl_time);
 }
 
@@ -264,17 +259,14 @@ void send_heartbeat_timer_callback(void* args) {
     client_t* client = socket_callback_args->client;
 
     if (client->state != CONNECT_FOUR_CLIENT_STATE_WAITING_FOR_A_CLIENT_WITH_A_FIRST_TURN) {
-        if (client->hb_time_multiplier == 1) {
-            client->hb_time_multiplier = 2;
-        }
-        client->hb_time_multiplier = pow(client->hb_time_multiplier, 2);
+        printf("%lld\n", client->hb_time);
+        client->hb_time *= 2;
         client_send_heartbeat(client, buf);
         if (time(NULL) * 1000 - client->last_heartbeat_received > 30000) {
             printf("No signal in last 30 seconds.\n");
         }
     }
 
-    client->hb_time = client->hb_time * client->hb_time_multiplier;
     start_timer(socket_callback_args->heartbeat_timer, client->hb_time);
 }
 

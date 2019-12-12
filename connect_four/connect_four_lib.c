@@ -20,8 +20,6 @@ void init_client(client_t* client, client_addr_t other_client_addr, client_addr_
     time_t msec = time(NULL) * 1000;
     client->last_heartbeat_received = msec;
     client->last_column_received = msec;
-    client->hb_time_multiplier = 1;
-    client->cl_time_multiplier = 1;
 
     client->socket_fd = other_client_fd;
     client->heartbeat_count = 0;

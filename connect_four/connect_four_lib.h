@@ -98,9 +98,7 @@ typedef struct client {
     int64_t last_heartbeat_received;
     int64_t last_column_received;
     uint64_t hb_time;
-    uint64_t hb_time_multiplier;
     uint64_t cl_time;
-    uint64_t cl_time_multiplier;
 } client_t;
 
 void init_client(client_t* client, client_addr_t other_client_addr, client_addr_len_t other_client_addr_len, int port, int other_client_fd);
