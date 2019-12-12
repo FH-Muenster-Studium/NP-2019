@@ -361,7 +361,10 @@ int server_send_peer_info(server_client_t* server_client, char buf[], uint32_t i
 
 void init_server(server_t* server) {
     server->server_client_node = single_linked_list_init();
-    server->registered_client_count = 0;
+    //server->registered_client_count = 0;
+    //server->state = SERVER_STATE_NO_CLIENTS;
+    //server->first_client_fd = NULL;
+    //server->second_client_fd = NULL;
 }
 
 void add_client(server_t* server, int fd) {

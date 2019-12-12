@@ -123,11 +123,24 @@ bool handle_package(connect_four_header_t* header, server_t* server, server_clie
             server_client->password = password;
             server_client->state = SERVER_CLIENT_STATE_REGISTERED;
 
-            server->registered_client_count++;
+            /*if (server->first_client_fd == NULL) {
+                server->first_client_fd = server_client;
+            } else if (server->second_client_fd == NULL) {
+                server->second_client_fd = server_client;
+            }*/
+
+            /*server->registered_client_count++;
             if (server->registered_client_count == 2) {
                 //TODO: send peer info from other client to other
                 printf("Will deliver messages\n");
-            }
+            }*/
+            /*if (server->first_client_fd != NULL && server->second_client_fd != NULL) {
+
+                remove_client(server, server->first_client_fd->client_fd);
+                remove_client(server, server->second_client_fd->client_fd);
+                server->first_client_fd = NULL;
+                server->second_client_fd = NULL;
+            }*/
             //printf("handle registration %d %d %s %s:\n", register_request.name_length, register_request.password_length, username, password);
             //server_send_peer_info(server_client, NULL, 0, 0, 0, "test3");
             break;

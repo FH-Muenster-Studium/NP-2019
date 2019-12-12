@@ -117,3 +117,19 @@ bool single_linked_list_iterate(struct Node* singleLinkedList, void(* callback)(
     }
     return false;
 }
+
+bool single_linked_list_get_and_delete(struct Node* singleLinkedList, void(* callback)(void*, void*), void* iteration_data, int count) {
+    struct Node* first = singleLinkedList;
+    singleLinkedList = singleLinkedList->next;
+    int curr_count = count;
+    while (singleLinkedList != NULL) {
+        if (curr_count == 0) {
+            first->next = singleLinkedList;
+            return true;
+        }
+        callback(singleLinkedList->data, iteration_data);
+        singleLinkedList = singleLinkedList->next;
+        curr_count--;
+    }
+    return false;
+}

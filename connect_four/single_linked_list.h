@@ -31,4 +31,6 @@ bool single_linked_list_has_data(struct Node* singleLinkedList, bool(*find)(void
 
 bool single_linked_list_iterate(struct Node* singleLinkedList, void(* callback)(void*, void*), void* iteration_data);
 
+bool single_linked_list_get_and_delete(struct Node* singleLinkedList, void(* callback)(void*, void*), void* iteration_data, int count);
+
 #endif //AUD_1_SINGLE_LINKED_LIST_H

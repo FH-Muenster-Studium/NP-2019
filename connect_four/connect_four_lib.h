@@ -126,6 +126,10 @@ typedef socklen_t client_addr_len_t;
 #define SERVER_CLIENT_STATE_REGISTERED 2
 #define SERVER_CLIENT_STATE_PLAYING 3
 
+/*#define SERVER_STATE_NO_CLIENTS 1
+#define SERVER_STATE_ONE_CLIENT 2
+#define SERVER_STATE_TWO_CLIENTS 3*/
+
 typedef struct client {
     int16_t state;
     bool first;
@@ -158,7 +162,10 @@ typedef struct {
 typedef struct {
     int server_fd;
     struct Node* server_client_node;
-    int registered_client_count;
+    //int registered_client_count;
+    //server_client_t* first_client_fd;
+    //server_client_t* second_client_fd;
+    int state;
 } server_t;
 
 void init_server(server_t* server);
