@@ -385,8 +385,15 @@ int get_address_for_search_for_tcp(char* ip, char* port) {
     curr = result;
 
     do {
-        Getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
+#ifdef HAVE_SIN_LEN
+        Getnameinfo(curr->ai_addr, ((struct sockaddr_in*) curr->ai_addr)->sin_len, host_name_buffer,
+                    sizeof(host_name_buffer), NULL, 0,
                     NI_NUMERICHOST);
+#else
+        Getnameinfo(curr->ai_addr, sizeof(struct sockaddr_in), host_name_buffer,
+                    sizeof(host_name_buffer), NULL, 0,
+                    NI_NUMERICHOST);
+#endif
         if (curr->ai_family == AF_INET) {
             printf("try connect to: %s %d\n", host_name_buffer, ntohs(((struct sockaddr_in*) curr->ai_addr)->sin_port));
             fd = Socket(curr->ai_family, curr->ai_socktype, curr->ai_protocol);
