@@ -5,6 +5,7 @@
 #ifndef DAYTIME_CLIENT_SOCKET_H
 #define DAYTIME_CLIENT_SOCKET_H
 
+#include <sys/types.h>
 // For socket api
 #include <sys/socket.h>
 // For protocol defines
