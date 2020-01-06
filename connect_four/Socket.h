@@ -18,6 +18,7 @@
 #include <netdb.h>
 // For inet_ntop
 #include <arpa/inet.h>
+#include <sys/select.h>
 
 int Socket(int address_family, int type, int protocol);
 
