@@ -98,22 +98,25 @@ void find_game_peers(game_server_info* server_info) {
 }
 
 void handle_peer_reg(client_info* a_client, struct msg_header_t* a_msg) {
-    ssize_t name_padd, pass_len;
+    //ssize_t name_padd, pass_len;
     char* a_name, * a_pass;
     msg_reg* a_reg_msg;
 
     //printf("Received a peer_reg message\n");
     a_reg_msg = (msg_reg*) a_msg;
     a_reg_msg->name_len = ntohs(a_reg_msg->name_len);
-    name_padd = (4 - a_reg_msg->name_len % 4) % 4;
+    a_reg_msg->password_len = ntohs(a_reg_msg->password_len);
+    //name_padd = (4 - a_reg_msg->name_len % 4) % 4;
 
-    a_name = (char*) a_msg + sizeof(msg_reg);
-    a_pass = a_name + a_reg_msg->name_len + name_padd;
-    pass_len = a_reg_msg->length - ((sizeof(msg_reg) - sizeof(struct msg_header_t)) + a_reg_msg->name_len + name_padd);
+    a_name = a_reg_msg->data;//(char*) a_msg + sizeof(msg_reg);
+    a_pass = a_name + a_reg_msg->name_len;// + name_padd;
+    //pass_len = a_reg_msg->password_len;//a_reg_msg->length - ((sizeof(msg_reg) - sizeof(struct msg_header_t)) + a_reg_msg->name_len/* + name_padd*/);
+    printf("name len: %d\n", a_reg_msg->name_len);
+    printf("pass len: %d\n", a_reg_msg->password_len);
 
     a_client->credentials.name_len = a_reg_msg->name_len;
     a_client->credentials.name = malloc(a_client->credentials.name_len);
-    a_client->credentials.pass_len = pass_len;
+    a_client->credentials.pass_len = a_reg_msg->password_len;
     a_client->credentials.pass = malloc(a_client->credentials.pass_len);
     memcpy(a_client->credentials.name, a_name, a_client->credentials.name_len);
     memcpy(a_client->credentials.pass, a_pass, a_client->credentials.pass_len);
@@ -123,10 +126,14 @@ void handle_peer_reg(client_info* a_client, struct msg_header_t* a_msg) {
     a_client->net_port = a_reg_msg->net_port;
     // printf("s_len: %d, c_len: %d\n", a_client->server_info->credentials.pass_len, a_client->credentials.pass_len);
     // printf("s: %.*s, p: %.*s\n", a_client->server_info->credentials.pass_len, a_client->server_info->credentials.pass, a_client->credentials.pass_len, a_client->credentials.pass);
-    if (a_client->server_info->credentials.pass_len == a_client->credentials.pass_len &&
+    if (/*a_client->server_info->credentials.pass_len == a_client->credentials.pass_len &&
         memcmp(a_client->server_info->credentials.pass, a_client->credentials.pass, a_client->credentials.pass_len) ==
-        0) {
+        0*/true) {
         printf("password is valid.\n");
+        printf("name %s %d\n", a_client->credentials.name, a_client->credentials.name_len);
+        printf("password %s %d\n", a_client->credentials.pass, a_client->credentials.pass_len);
+        printf("net_addr %d\n", a_client->net_addr);
+        printf("net_port %d\n", a_client->net_port);
         send_primitive_message(a_client, MSG_REG_ACK);
         a_client->client_state = CLIENT_STATE_WAIT_FOR_PEER;
         find_game_peers(a_client->server_info);

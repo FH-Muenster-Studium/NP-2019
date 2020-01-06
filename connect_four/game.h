@@ -69,6 +69,8 @@ struct msg_reg_t {
     uint32_t net_addr;
     uint16_t net_port;
     uint16_t name_len;
+    uint16_t password_len;
+    char data[];
     // char* name;
     // char* password;
 } __attribute__((packed));
