@@ -254,7 +254,7 @@ void client_send_error(client_t* client, char buf[], char* cause) {
     ssize_t string_length = strlen(cause) + 1;
     connect_four_error_message_t message;
     message.type = htons(CONNECT_FOUR_HEADER_TYPE_ERROR);
-    message.length = htonll(string_length);
+    message.length = htonl(string_length);
     ssize_t size = sizeof(connect_four_header_t) + string_length;
 
     int16ToChar(buf, message.type);
