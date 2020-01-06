@@ -176,7 +176,7 @@ ssize_t packet_sequenzer(client_info* a_client, ssize_t stream_len) {
     if (stream_len < msg_len)
         return stream_len;
     if (msg_len < a_client->server_info->msg_min_size[a_msg->type]) {
-        printf("Expected length %d but got %d\n", a_client->server_info->msg_min_size[a_msg->type], msg_len);
+        printf("Expected length %d but got %d for type: %d\n", a_client->server_info->msg_min_size[a_msg->type], msg_len, a_msg->type);
         cleanup_client(a_client);
         return -1;
     }
