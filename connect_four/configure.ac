@@ -1,5 +1,5 @@
 AC_INIT(connect_four_server, 1.1)
-AC_CONFIG_SRCDIR(connect_four_server.c)
+AC_CONFIG_SRCDIR(gameserver.c)
 AM_INIT_AUTOMAKE
 
 AC_PROG_CC

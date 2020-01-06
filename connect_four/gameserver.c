@@ -11,7 +11,7 @@ int parse_args(int argc, char** argv, game_server_info* server_info) {
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
     Getaddrinfo(NULL, argv[1], &hints, &server_info->server);
-    /* Note: These "strings" are not zero-terminated anymore, so we handle it as char array rather than strings */
+    //The credential strings are not zero-terminated anymore, so we handle it as char array
     server_info->credentials.pass_len = strlen(argv[2]);
     server_info->credentials.pass = malloc(server_info->credentials.pass_len);
     memcpy(server_info->credentials.pass, argv[2], server_info->credentials.pass_len);
@@ -64,7 +64,7 @@ void send_peer_info(client_info* a_client, client_info* a_clients_peer, uint16_t
     a_peer_info = (msg_peer_info*) a_msg;
     a_peer_info->type = htons(MSG_PEER_INFO);
     a_peer_info->length = htons(s - name_padding - sizeof(struct msg_header_t));
-    // Note: net_addr and net_port are still in network byte order
+    // net_addr and net_port are still in network byte order
     a_peer_info->net_addr = a_clients_peer->net_addr;
     a_peer_info->net_port = a_clients_peer->net_port;
     a_peer_info->start_flag = htons(start_flag);
@@ -102,7 +102,7 @@ void handle_peer_reg(client_info* a_client, struct msg_header_t* a_msg) {
     char* a_name, * a_pass;
     msg_reg* a_reg_msg;
 
-    //printf("Got a peer_reg message\n");
+    //printf("Received a peer_reg message\n");
     a_reg_msg = (msg_reg*) a_msg;
     a_reg_msg->name_len = ntohs(a_reg_msg->name_len);
     name_padd = (4 - a_reg_msg->name_len % 4) % 4;
@@ -150,7 +150,7 @@ void handle_client_message(client_info* a_client, struct msg_header_t* a_msg) {
             cleanup_client(a_client);
             break;
         default:
-            printf("Received unknown message, msg_type-ID: %d\n", a_msg->type);
+            printf("received unknown message, msg_type: %d\n", a_msg->type);
             send_primitive_message(a_client, MSG_UNKNOWN_MSG_TYPE);
             break;
     }

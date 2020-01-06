@@ -9,11 +9,6 @@
 
 #define BUFFER_SIZE (1 << 16)
 #define BACKLOG 1000
-
-enum {
-    MODE_SERVER,
-    MODE_DIRECT
-};
 /*
  * Message TYPES
  */
@@ -52,7 +47,7 @@ enum {
     CLIENT_STATE_WAIT_PEER_INFO_ACK
 };
 
-#define FIRST_SEQ_NUMBER 0
+#define FIRST_SEQ_NUMBER 1
 #define TIMEOUT_ACK_MIN_MS 200
 #define TIMEOUT_ACK_MAX_MS 20000
 #define TIMEOUT_HB_MIN_MS 8000
