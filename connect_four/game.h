@@ -17,12 +17,8 @@ enum {
     MSG_REG_ACK = 2,
     MSG_REG_NACK = 3,
     MSG_PEER_INFO = 4,
-    MSG_MOVE = 5,
-    MSG_MOVE_ACK = 6,
-    MSG_HEARTBEAT = 7,
-    MSG_HEARTBEAT_ACK = 8,
-    MSG_UNKNOWN_MSG_TYPE = 9,
-    MSG_PEER_INFO_ACK = 10
+    MSG_PEER_INFO_ACK = 5,
+    MSG_UNKNOWN_MSG_TYPE,
 };
 
 #define MSG_MAX_TYPE_ID 10
