@@ -18,8 +18,8 @@ int parse_args(int argc, char** argv, game_server_info* server_info) {
     return 0;
 }
 
-void finalize_client(client_info* a_client) {
-    printf("Finalize client, fd #%d\n", a_client->client_fd);
+void cleanup_client(client_info* a_client) {
+    printf("Cleanup client, fd #%d\n", a_client->client_fd);
     deregister_fd_callback(a_client->client_fd);
     Shutdown(a_client->client_fd, SHUT_WR);
     while (Recv(a_client->client_fd, (void*) a_client->message.buf, (size_t) BUFFER_SIZE, 0) != 0) {
@@ -31,14 +31,14 @@ void finalize_client(client_info* a_client) {
     free(a_client);
 }
 
-void finalize(game_server_info* server_info, int exit_code, char* last_message) {
+void cleanup(game_server_info* server_info, int exit_code, char* last_message) {
     client_info* a_client, * tmp_client;
     if (last_message != NULL)
         printf("%s", last_message);
     for (a_client = server_info->client_queue.next; a_client != NULL;) {
         tmp_client = a_client;
         a_client = a_client->next;
-        finalize_client(tmp_client);
+        cleanup_client(tmp_client);
     }
     Close(server_info->server_fd);
     freeaddrinfo(server_info->server);
@@ -143,11 +143,11 @@ void handle_client_message(client_info* a_client, struct msg_header_t* a_msg) {
             break;
         case MSG_PEER_INFO_ACK:
             printf("Got MSG_PEER_INFO_ACK\n");
-            finalize_client(a_client);
+            cleanup_client(a_client);
             break;
         case MSG_UNKNOWN_MSG_TYPE:
             printf("Sended unknown message.\n");
-            finalize_client(a_client);
+            cleanup_client(a_client);
             break;
         default:
             printf("Received unknown message, msg_type-ID: %d\n", a_msg->type);
@@ -170,7 +170,7 @@ ssize_t packet_sequenzer(client_info* a_client, ssize_t stream_len) {
         return stream_len;
     if (msg_len < a_client->server_info->msg_min_size[a_msg->type]) {
         printf("Expected length %d but got %d\n", a_client->server_info->msg_min_size[a_msg->type], msg_len);
-        finalize_client(a_client);
+        cleanup_client(a_client);
         return -1;
     }
     handle_client_message(a_client, a_msg);
@@ -184,7 +184,7 @@ void handle_client_rec(client_info* a_client) {
     ssize_t stream_len;
     if ((n = Recv(a_client->client_fd, (void*) (a_client->message.buf + a_client->message.buf_offset),
                   BUFFER_SIZE - a_client->message.buf_offset, 0)) == 0) {
-        finalize_client(a_client);
+        cleanup_client(a_client);
         return;
     }
     //printf("Received %zd bytes, buf offset: %zd \n", n, a_client->message.buf_offset);
@@ -234,6 +234,6 @@ int main(int argc, char** argv) {
     if (parse_args(argc, argv, &server_info) != 0)
         return -1;
     val = init_gs(&server_info);
-    finalize(&server_info, val, NULL);
+    cleanup(&server_info, val, NULL);
     return 0;
 }
