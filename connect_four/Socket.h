@@ -68,4 +68,6 @@ int Getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host,
 
 int Inet_pton(int af, const char * restrict src, void * restrict dst);
 
+int Setsockopt(int sockfd, int level, int optname, const void* optval, socklen_t optlen);
+
 #endif //DAYTIME_CLIENT_SOCKET_H

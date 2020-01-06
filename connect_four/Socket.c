@@ -156,3 +156,12 @@ int Inet_pton(int af, const char * restrict src, void * restrict dst) {
     }
     return result_code;
 }
+
+int Setsockopt(int sockfd, int level, int optname, const void* optval, socklen_t optlen)
+{
+    int n;
+    if ((n = setsockopt(sockfd, level, optname, optval, optlen)) < 0) {
+        perror("getsockopt");
+    }
+    return n;
+}

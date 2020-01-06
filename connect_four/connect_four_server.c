@@ -230,7 +230,7 @@ void server_socket_callback(void* args) {
     register_fd_callback(client_fd, client_socket_callback, receive_args);
 }
 
-int main(int argc, char** argv) {
+/*int main(int argc, char** argv) {
     if (argc < 3) {
         printf("Provide server ip address and port");
         return 0;
@@ -262,20 +262,20 @@ int main(int argc, char** argv) {
 
     printf("Server fd: %d\n", server_fd);
 
-    /*int running = 1;
+    //int running = 1;
 
-    struct sockaddr client_addr;
-    socklen_t client_addr_len;
-    memset((void*) &client_addr, 0, sizeof(client_addr));
-    int client_fd;
+    //struct sockaddr client_addr;
+    //socklen_t client_addr_len;
+    //memset((void*) &client_addr, 0, sizeof(client_addr));
+    //int client_fd;
 
-    while (running) {
-        printf("client accept\n");
-        memset((void*) &client_addr, 0, sizeof(client_addr));
-        client_addr_len = (socklen_t) sizeof(client_addr);
-        client_fd = Accept(server_fd, (struct sockaddr*) &client_addr, &client_addr_len);
-        printf("client accepted: %d %s\n", client_fd, inet_ntoa(((struct sockaddr_in*) &client_addr)->sin_addr));
-    }*/
+    //while (running) {
+    //    printf("client accept\n");
+    //    memset((void*) &client_addr, 0, sizeof(client_addr));
+    //    client_addr_len = (socklen_t) sizeof(client_addr);
+    //    client_fd = Accept(server_fd, (struct sockaddr*) &client_addr, &client_addr_len);
+    //    printf("client accepted: %d %s\n", client_fd, inet_ntoa(((struct sockaddr_in*) &client_addr)->sin_addr));
+    //}
 
     handle_events();
 
@@ -283,3 +283,4 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+*/
