@@ -13,19 +13,19 @@
  * Message TYPES
  */
 enum {
-    MSG_REG = 0,
-    MSG_REG_ACK,
-    MSG_REG_NACK,
-    MSG_PEER_INFO,
-    MSG_MOVE,
-    MSG_MOVE_ACK,
-    MSG_HEARTBEAT,
-    MSG_HEARTBEAT_ACK,
-    MSG_UNKNOWN_MSG_TYPE,
-    MSG_PEER_INFO_ACK
+    MSG_REG = 1,
+    MSG_REG_ACK = 2,
+    MSG_REG_NACK = 3,
+    MSG_PEER_INFO = 4,
+    MSG_MOVE = 5,
+    MSG_MOVE_ACK = 6,
+    MSG_HEARTBEAT = 7,
+    MSG_HEARTBEAT_ACK = 8,
+    MSG_UNKNOWN_MSG_TYPE = 9,
+    MSG_PEER_INFO_ACK = 10
 };
 
-#define MSG_MAX_TYPE_ID 9
+#define MSG_MAX_TYPE_ID 10
 
 #define LOCAL_START 1
 #define REMOTE_START 0
