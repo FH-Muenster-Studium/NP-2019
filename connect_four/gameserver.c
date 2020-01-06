@@ -98,6 +98,40 @@ void find_game_peers(game_server_info* server_info) {
 }
 
 void handle_peer_reg(client_info* a_client, struct msg_header_t* a_msg) {
+
+    msg_reg message = {};
+    char* name;
+    char* password;
+    serialize_server_read_register((void*) a_msg, &message, &name, &password);
+    msg_reg* a_reg_msg2 = &message;
+
+    a_client->credentials.name_len = a_reg_msg2->name_len;
+    a_client->credentials.name = name;
+    a_client->credentials.pass_len = a_reg_msg2->password_len;
+    a_client->credentials.pass = password;
+
+    //Save it in network byte order to prevent converting again
+    a_client->net_addr = a_reg_msg2->net_addr;
+    a_client->net_port = a_reg_msg2->net_port;
+    if (/*a_client->server_info->credentials.pass_len == a_client->credentials.pass_len &&
+        memcmp(a_client->server_info->credentials.pass, a_client->credentials.pass, a_client->credentials.pass_len) ==
+        0*/true) {
+        printf("password is valid.\n");
+        printf("name %s %d\n", a_client->credentials.name, a_client->credentials.name_len);
+        printf("password %s %d\n", a_client->credentials.pass, a_client->credentials.pass_len);
+        printf("net_addr %d\n", a_client->net_addr);
+        printf("net_port %d\n", a_client->net_port);
+        send_primitive_message(a_client, MSG_REG_ACK);
+        a_client->client_state = CLIENT_STATE_WAIT_FOR_PEER;
+        find_game_peers(a_client->server_info);
+    } else {
+        printf("password is invalid.\n");
+        send_primitive_message(a_client, MSG_REG_NACK);
+    }
+
+    if (true) return;
+
+
     //ssize_t name_padd, pass_len;
     char* a_name, * a_pass;
     msg_reg* a_reg_msg;
@@ -145,9 +179,10 @@ void handle_peer_reg(client_info* a_client, struct msg_header_t* a_msg) {
 
 void handle_client_message(client_info* a_client, struct msg_header_t* a_msg) {
     switch (a_msg->type) {
-        case MSG_REG:
+        case MSG_REG: {
             handle_peer_reg(a_client, a_msg);
             break;
+        }
         case MSG_PEER_INFO_ACK:
             printf("Got MSG_PEER_INFO_ACK\n");
             cleanup_client(a_client);

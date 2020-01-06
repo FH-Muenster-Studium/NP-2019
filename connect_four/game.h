@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <sys/param.h>
 #include <sys/types.h>
+#include <string.h>
+#include <stdlib.h>
 
 #ifndef GAME_H_
 #define GAME_H_
@@ -78,6 +80,7 @@ struct msg_peer_info_t {
     uint32_t net_addr;
     uint16_t net_port;
     uint16_t start_flag;
+    char data[];
     //char* name;
 } __attribute__((packed));
 typedef struct msg_peer_info_t msg_peer_info;
@@ -157,5 +160,23 @@ struct game_server_info_t {
     uint16_t msg_min_size[MSG_MAX_TYPE_ID];
 };
 typedef struct game_server_info_t game_server_info;
+
+void serialize_int16ToChar(char a[], uint16_t n);
+
+void serialize_int32ToChar(char a[], int32_t n);
+
+void serialize_uint32ToChar(char a[], uint32_t n);
+
+void serialize_int64ToChar(char a[], int64_t n);
+
+void serialize_uint64ToChar(char a[], uint64_t n);
+
+int64_t serialize_charTo64bitNum(char a[]);
+
+uint32_t serialize_charToU32bitNum(char a[]);
+
+uint16_t serialize_charToU16bitNum(char a[]);
+
+void serialize_server_read_register(char buf[], msg_reg* message, char** username, char** password);
 
 #endif
