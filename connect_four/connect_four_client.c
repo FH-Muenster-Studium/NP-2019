@@ -339,8 +339,15 @@ bool get_address_for_search(char* ip_str, char* port_str, uint32_t* ip, uint16_t
     }
 
     do {
-        Getnameinfo(curr->ai_addr, curr->ai_addr->sa_len, host_name_buffer, sizeof(host_name_buffer), NULL, 0,
+#ifdef HAVE_SIN_LEN
+        Getnameinfo(curr->ai_addr, ((struct sockaddr_in*) curr->ai_addr)->sin_len, host_name_buffer,
+                    sizeof(host_name_buffer), NULL, 0,
                     NI_NUMERICHOST);
+#else
+        Getnameinfo(curr->ai_addr, sizeof(struct sockaddr_in), host_name_buffer,
+                    sizeof(host_name_buffer), NULL, 0,
+                    NI_NUMERICHOST);
+#endif
         if (curr->ai_family == AF_INET) {
             result = curr;
             *ip = get_in_addr(curr->ai_addr);
