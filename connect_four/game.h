@@ -179,4 +179,6 @@ uint16_t serialize_charToU16bitNum(char a[]);
 
 void serialize_server_read_register(char buf[], msg_reg* message, char** username, char** password);
 
+void* serialize_server_send_peer_info(msg_peer_info* msg_peer_info, ssize_t size);
+
 #endif

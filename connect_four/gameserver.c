@@ -54,7 +54,7 @@ void send_primitive_message(client_info* a_client, uint16_t type) {
 
 void send_peer_info(client_info* a_client, client_info* a_clients_peer, uint16_t start_flag) {
     ssize_t name_padding, s;
-    char* a_msg, * a_name;
+    char* a_msg;
     msg_peer_info* a_peer_info;
 
     name_padding = (4 - a_clients_peer->credentials.name_len % 4) % 4;
@@ -69,11 +69,16 @@ void send_peer_info(client_info* a_client, client_info* a_clients_peer, uint16_t
     a_peer_info->net_port = a_clients_peer->net_port;
     a_peer_info->start_flag = htons(start_flag);
 
-    a_name = a_msg + sizeof(msg_peer_info);
-    memcpy(a_name, a_clients_peer->credentials.name, a_clients_peer->credentials.name_len);
+    memcpy(a_peer_info->data, a_clients_peer->credentials.name, a_clients_peer->credentials.name_len);
 
-    Send(a_client->client_fd, a_msg, s, 0);
+
+
+    void* send_msg = serialize_server_send_peer_info(a_peer_info, s);
+
+    //Send(a_client->client_fd, a_msg, s, 0);
+    Send(a_client->client_fd, send_msg, s, 0);
     free(a_msg);
+    free(send_msg);
     //TODO: should we wait for ack forever?
     a_client->client_state = CLIENT_STATE_WAIT_PEER_INFO_ACK;
 }
@@ -98,21 +103,20 @@ void find_game_peers(game_server_info* server_info) {
 }
 
 void handle_peer_reg(client_info* a_client, struct msg_header_t* a_msg) {
-
-    msg_reg message = {};
+    msg_reg message;
     char* name;
     char* password;
-    serialize_server_read_register((void*) a_msg, &message, &name, &password);
-    msg_reg* a_reg_msg2 = &message;
 
-    a_client->credentials.name_len = a_reg_msg2->name_len;
+    serialize_server_read_register((void*) a_msg, &message, &name, &password);
+
+    a_client->credentials.name_len = message.name_len;
     a_client->credentials.name = name;
-    a_client->credentials.pass_len = a_reg_msg2->password_len;
+    a_client->credentials.pass_len = message.password_len;
     a_client->credentials.pass = password;
 
     //Save it in network byte order to prevent converting again
-    a_client->net_addr = a_reg_msg2->net_addr;
-    a_client->net_port = a_reg_msg2->net_port;
+    a_client->net_addr = message.net_addr;
+    a_client->net_port = message.net_port;
     if (/*a_client->server_info->credentials.pass_len == a_client->credentials.pass_len &&
         memcmp(a_client->server_info->credentials.pass, a_client->credentials.pass, a_client->credentials.pass_len) ==
         0*/true) {

@@ -64,3 +64,15 @@ void serialize_server_read_register(char buf[], msg_reg* message, char** usernam
     memcpy(*username, name_buffer, message->name_len);
     memcpy(*password, password_buffer, message->password_len);
 }
+
+void* serialize_server_send_peer_info(msg_peer_info* msg_peer_info, ssize_t size) {
+    void* buf = malloc(size);
+    ssize_t name_length = size - sizeof(struct msg_peer_info_t);
+    serialize_int16ToChar(buf, msg_peer_info->type);
+    serialize_int16ToChar(buf + sizeof(uint16_t), msg_peer_info->length);
+    serialize_uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t), msg_peer_info->net_addr);
+    serialize_uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t), msg_peer_info->net_port);
+    serialize_uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t), msg_peer_info->start_flag);
+    memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t), msg_peer_info->data, name_length);
+    return buf;
+}
