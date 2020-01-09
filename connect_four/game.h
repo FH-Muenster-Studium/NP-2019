@@ -181,4 +181,6 @@ void serialize_server_read_register(char buf[], msg_reg* message, char** usernam
 
 void* serialize_server_send_peer_info(msg_peer_info* msg_peer_info, ssize_t size);
 
+void serialize_server_read_header(char buf[], struct msg_header_t* header);
+
 #endif

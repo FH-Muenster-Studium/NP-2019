@@ -37,9 +37,16 @@ uint32_t serialize_charToU32bitNum(char a[]) {
 }
 
 uint16_t serialize_charToU16bitNum(char a[]) {
-    uint32_t n = 0;
-    memcpy(&n, a, 4);
+    uint16_t n = 0;
+    memcpy(&n, a, 2);
     return n;
+}
+
+void serialize_server_read_header(char buf[], struct msg_header_t* header) {
+    header->type = ntohs(serialize_charToU16bitNum(buf));
+    header->length = ntohs(serialize_charToU16bitNum(buf + sizeof(uint16_t)));
+    memcpy(buf, &header->type, 2);
+    memcpy(buf + sizeof(uint16_t), &header->length, 2);
 }
 
 void serialize_server_read_register(char buf[], msg_reg* message, char** username, char** password) {
@@ -48,7 +55,8 @@ void serialize_server_read_register(char buf[], msg_reg* message, char** usernam
     message->net_addr = serialize_charToU32bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t));
     message->net_port = serialize_charToU16bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t));
     message->name_len =
-            ntohs(serialize_charToU16bitNum(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t)));
+            ntohs(serialize_charToU16bitNum(
+                    buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t)));
     message->password_len = ntohs(serialize_charToU16bitNum(
             buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t)));
     char name_buffer[message->name_len];
@@ -72,7 +80,9 @@ void* serialize_server_send_peer_info(msg_peer_info* msg_peer_info, ssize_t size
     serialize_int16ToChar(buf + sizeof(uint16_t), msg_peer_info->length);
     serialize_uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t), msg_peer_info->net_addr);
     serialize_uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t), msg_peer_info->net_port);
-    serialize_uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t), msg_peer_info->start_flag);
-    memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t), msg_peer_info->data, name_length);
+    serialize_uint32ToChar(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t),
+                           msg_peer_info->start_flag);
+    memcpy(buf + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t),
+           msg_peer_info->data, name_length);
     return buf;
 }

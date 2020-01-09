@@ -207,19 +207,18 @@ ssize_t packet_sequenzer(client_info* a_client, ssize_t stream_len) {
     if (stream_len < (ssize_t) sizeof(struct msg_header_t))
         return stream_len;
 
-    struct msg_header_t* a_msg = (struct msg_header_t*) a_client->message.buf;
-    a_msg->length = ntohs(a_msg->length);
-    a_msg->type = ntohs(a_msg->type);
+    struct msg_header_t a_msg;
+    serialize_server_read_header(a_client->message.buf, &a_msg);
 
-    msg_len = sizeof(struct msg_header_t) + a_msg->length + (4 - a_msg->length % 4) % 4;
+    msg_len = sizeof(struct msg_header_t) + a_msg.length + (4 - a_msg.length % 4) % 4;
     if (stream_len < msg_len)
         return stream_len;
-    if (msg_len < a_client->server_info->msg_min_size[a_msg->type]) {
-        printf("Expected length %d but got %d for type: %d\n", a_client->server_info->msg_min_size[a_msg->type], msg_len, a_msg->type);
+    if (msg_len < a_client->server_info->msg_min_size[a_msg.type]) {
+        printf("Expected length %d but got %d for type: %d\n", a_client->server_info->msg_min_size[a_msg.type], msg_len, a_msg.type);
         cleanup_client(a_client);
         return -1;
     }
-    handle_client_message(a_client, a_msg);
+    handle_client_message(a_client, (struct msg_header_t*) a_client->message.buf);
     memmove(a_client->message.buf, a_client->message.buf + msg_len, stream_len - msg_len);
 
     return packet_sequenzer(a_client, stream_len - msg_len);
