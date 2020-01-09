@@ -121,8 +121,8 @@ void handle_peer_reg(client_info* a_client, struct msg_header_t* a_msg) {
         memcmp(a_client->server_info->credentials.pass, a_client->credentials.pass, a_client->credentials.pass_len) ==
         0*/true) {
         printf("password is valid.\n");
-        printf("name %s %d\n", a_client->credentials.name, a_client->credentials.name_len);
-        printf("password %s %d\n", a_client->credentials.pass, a_client->credentials.pass_len);
+        printf("name %.*s\n", a_client->credentials.name_len, a_client->credentials.name);
+        printf("password %.*s\n", a_client->credentials.pass_len, a_client->credentials.pass);
         printf("net_addr %d\n", a_client->net_addr);
         printf("net_port %d\n", a_client->net_port);
         send_primitive_message(a_client, MSG_REG_ACK);
@@ -257,7 +257,7 @@ void handle_accept(game_server_info* server_info) {
     client_list_add(&server_info->client_queue, initialize_client(server_info, a_client_fd));
 }
 
-int init_gs(game_server_info* server_info) {
+int init_game_server(game_server_info* server_info) {
     int option;
     server_info->server_fd = Socket(server_info->server->ai_family, server_info->server->ai_socktype, 0);
     option = 1;
@@ -279,7 +279,7 @@ int main(int argc, char** argv) {
     init_min_msg_size(server_info.msg_min_size);
     if (parse_args(argc, argv, &server_info) != 0)
         return -1;
-    val = init_gs(&server_info);
+    val = init_game_server(&server_info);
     cleanup(&server_info, val, NULL);
     return 0;
 }
