@@ -188,7 +188,7 @@ void handle_client_message(client_info* a_client, struct msg_header_t* a_msg) {
             break;
         }
         case MSG_PEER_INFO_ACK:
-            printf("Got MSG_PEER_INFO_ACK\n");
+            //printf("Got MSG_PEER_INFO_ACK\n");
             cleanup_client(a_client);
             break;
         case MSG_UNKNOWN_MSG_TYPE:
